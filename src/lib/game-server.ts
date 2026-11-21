@@ -7,6 +7,7 @@ import type {
   FinalState,
   GameState,
   LeaderboardEntry,
+  Gender,
   Mode,
   Phase,
   PublicPlayer,
@@ -37,6 +38,7 @@ interface PlayerRow {
   color: string;
   is_bot: boolean;
   claimable: boolean;
+  gender: Gender | null;
   device_token: string;
   created_at: string;
 }
@@ -97,7 +99,7 @@ export async function bump(gameId: string) {
 }
 
 function toPublic(p: PlayerRow): PublicPlayer {
-  return { id: p.id, name: p.name, color: p.color, isBot: p.is_bot, released: !!p.claimable };
+  return { id: p.id, name: p.name, color: p.color, isBot: p.is_bot, released: !!p.claimable, gender: p.gender ?? null };
 }
 
 type Q<T> = PromiseLike<{ data: T[] | null; error: unknown }>;
@@ -134,12 +136,18 @@ function rank(
   const sorted = [...players].sort(
     (a, b) => totals.get(b.id)! - totals.get(a.id)! || a.name.localeCompare(b.name, "fr"),
   );
+  // Mode adultes : deux classements séparés (F / H), le rang est celui dans son camp.
+  const camp = (p: PlayerRow) => (game.mode === "adultes" ? (p.gender ?? "?") : "");
   const leaderboard: LeaderboardEntry[] = [];
-  sorted.forEach((p, i) => {
+  const last = new Map<string, { total: number; rank: number; pos: number }>();
+  for (const p of sorted) {
     const total = totals.get(p.id)!;
-    const prev = leaderboard[i - 1];
-    leaderboard.push({ ...toPublic(p), total, rank: prev && prev.total === total ? prev.rank : i + 1 });
-  });
+    const prev = last.get(camp(p));
+    const pos = (prev?.pos ?? 0) + 1;
+    const rank = prev && prev.total === total ? prev.rank : pos;
+    last.set(camp(p), { total, rank, pos });
+    leaderboard.push({ ...toPublic(p), total, rank });
+  }
   return leaderboard;
 }
 
@@ -337,6 +345,7 @@ export async function buildState(
       id: p.id,
       name: p.name,
       color: p.color,
+      gender: p.gender ?? null,
       total: lb.total,
       rank: lb.rank,
       current: mine
@@ -366,6 +375,7 @@ export async function buildState(
       isTest: game.is_test,
       version: game.version,
       hasFinal: !!prog.final,
+      hasBoxes: game.box_count > 0,
       lastInRound,
       lastQuestion: qi >= prog.flat.length - 1,
     },

@@ -1,0 +1,49 @@
+{
+  "id": "quiz-noel",
+  "type": "quiz",
+  "title": "Quiz de Noël",
+  "rules": "Des questions sur Noël et la famille. Réponds vite : plus tu es rapide, plus tu gagnes de points !",
+  "timeLimitMs": 20000,
+  "questions": [
+    {
+      "text": "Dans quel pays est née la tradition du sapin de Noël décoré ?",
+      "choices": ["Suède", "Angleterre", "Allemagne", "Canada"],
+      "correct": 2
+    },
+    {
+      "text": "Combien de rennes tirent le traîneau du Père Noël, Rudolph compris ?",
+      "choices": ["6", "9", "8", "12"],
+      "correct": 1
+    },
+    {
+      "text": "En quelle année est sorti « Le Père Noël est une ordure » ?",
+      "choices": ["1979", "1986", "1990", "1982"],
+      "correct": 3
+    },
+    {
+      "text": "Dans « Maman, j'ai raté l'avion », où part la famille ?",
+      "choices": ["Paris", "Londres", "Rome", "New York"],
+      "correct": 0
+    },
+    {
+      "text": "Quelle marque a popularisé le Père Noël rouge et blanc dans ses pubs des années 1930 ?",
+      "choices": ["Pepsi", "Coca-Cola", "Orangina", "Schweppes"],
+      "correct": 1
+    },
+    {
+      "text": "Quel pays offre chaque année le grand sapin de Trafalgar Square, à Londres ?",
+      "choices": ["Danemark", "Finlande", "Islande", "Norvège"],
+      "correct": 3
+    },
+    {
+      "text": "Que fête-t-on le 6 décembre dans l'est de la France ?",
+      "choices": ["L'Épiphanie", "La Sainte-Lucie", "La Saint-Nicolas", "La Chandeleur"],
+      "correct": 2
+    },
+    {
+      "text": "Combien de desserts compte la tradition provençale de Noël ?",
+      "choices": ["13", "7", "10", "12"],
+      "correct": 0
+    }
+  ]
+}

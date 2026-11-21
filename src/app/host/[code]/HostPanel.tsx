@@ -126,6 +126,11 @@ export default function HostPanel({
                     {p.name}
                     {p.released && <span className="text-xgold ml-1 text-xs font-normal">(libéré)</span>}
                   </span>
+                  {state.game.mode === "adultes" && (
+                    <Tiny onClick={() => void act("switch-gender", { playerId: p.id })}>
+                      <span title="Changer de camp">{p.gender === "F" ? "👩" : p.gender === "H" ? "👨" : "?"}</span>
+                    </Tiny>
+                  )}
                   <span className="text-xgold shrink-0 text-right text-sm">{formatPoints(p.total)}</span>
                   <Tiny onClick={() => void act("adjust", { playerId: p.id, points: -500 })}>−500</Tiny>
                   <Tiny onClick={() => void act("adjust", { playerId: p.id, points: 500 })}>+500</Tiny>

@@ -1,4 +1,5 @@
 // POST /api/games/:code/join — rejoindre une partie (ou se reconnecter).
+// GET  /api/games/:code/join — mode de la partie (le formulaire demande F / H en mode adultes).
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { bump, getGame } from "@/lib/game-server";
 import { handle, ok, readJson, HttpError } from "@/lib/http";
@@ -11,9 +12,15 @@ function nameKey(name: string) {
   return name.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 }
 
+export const GET = handle(async (_req: Request, ctx: { params: Promise<{ code: string }> }) => {
+  const { code } = await ctx.params;
+  const game = await getGame(code);
+  return ok({ mode: game.mode, finished: game.status !== "active" });
+});
+
 export const POST = handle(async (req: Request, ctx: { params: Promise<{ code: string }> }) => {
   const { code } = await ctx.params;
-  const body = await readJson<{ name?: string; color?: string; playerId?: string; token?: string }>(req);
+  const body = await readJson<{ name?: string; color?: string; gender?: string; playerId?: string; token?: string }>(req);
   const game = await getGame(code);
   const db = supabaseAdmin();
 
@@ -35,6 +42,7 @@ export const POST = handle(async (req: Request, ctx: { params: Promise<{ code: s
   const name = String(body.name ?? "").trim().replace(/\s+/g, " ").slice(0, 20);
   if (!name) throw new HttpError(400, "Choisis un prénom");
   const color = COLOR_RE.test(String(body.color)) ? String(body.color) : "#2a9d88";
+  const gender = body.gender === "F" || body.gender === "H" ? body.gender : null;
 
   // Prénom déjà pris (sans tenir compte des accents ni des majuscules :
   // « ines » = « Inès ») ? Si l'animateur l'a libéré, ce téléphone reprend le
@@ -60,9 +68,12 @@ export const POST = handle(async (req: Request, ctx: { params: Promise<{ code: s
     throw new HttpError(409, TAKEN);
   }
 
+  // Mode adultes : le camp (F / H) est obligatoire, il décide du classement.
+  if (game.mode === "adultes" && !gender) throw new HttpError(400, "Choisis ton camp : Femmes ou Hommes");
+
   const { data, error } = await db
     .from("players")
-    .insert({ game_id: game.id, name, color })
+    .insert({ game_id: game.id, name, color, ...(game.mode === "adultes" ? { gender } : {}) })
     .select("id, name, color, device_token")
     .single();
   if (error) {

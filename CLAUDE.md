@@ -19,9 +19,14 @@ Lire aussi `AGENTS.md` (règles Next.js 16 : lire `node_modules/next/dist/docs/`
   contenu** ; le joueur clique une box puis ouvre le vrai paquet devant tout le monde. Le serveur ne connaît
   que les numéros. Pas d'indices, pas de joker : le 1er peut tomber sur le cadeau troll, c'est voulu.
 
-### Côté adultes
+### Côté adultes (fait le 21/11)
 - Même moteur, 2 classements séparés (**F / H**, choisi à l'inscription), 1 gagnant par camp.
-- Épreuves envisagées : blind test années 80–2000, bébé mystère, quiz famille.
+- Programme `programme-adultes.json` : blind test adultes → quiz de Noël → bébé mystère. **Pas de finale ni de
+  box** (`final: null`, `boxes: 0`) : après la dernière épreuve, la télé affiche la gagnante et le gagnant.
+- Mode choisi à la création de la partie (accueil : 🧒 Enfants / 🍷 Adultes). Le formulaire du téléphone lit le
+  mode (`GET /api/games/:code/join`) et demande le camp ; le serveur refuse une inscription adulte sans camp.
+- Rang = rang **dans son camp** (`rank()` dans `game-server.ts`), le téléphone affiche « 2e chez les femmes ».
+- ⚙ : bouton 👩/👨 pour changer le camp d'un joueur (`switch-gender`). Les bots sont répartis F / H.
 
 ## Stack
 
@@ -74,7 +79,7 @@ bombe, élimination et bonus sous verrou), `server_now_ms`, `bump_game`. Classem
 - `src/lib/game-server.ts` — chargement partie, auth animateur/joueur, `buildState` (état envoyé aux clients ;
   la bonne réponse n'est envoyée qu'en phase `results`).
 - `src/app/api/games/[code]/host/route.ts` — actions animateur : start, close, show-leaderboard, next,
-  restart-question, end, reset, add-bots, remove-bots, bot-answer, adjust, release, kick.
+  restart-question, end, reset, add-bots, remove-bots, bot-answer, adjust, release, switch-gender, kick.
   Les actions de déroulé (start, begin-round, show-leaderboard, next, skip-round) envoient `at` =
   « phase:question » vu par la télé : le serveur ignore l'action si l'état a changé (double clic, deux télés).
 - `src/hooks/useGameState.ts` — synchro Realtime + polling, chrono.
@@ -114,7 +119,8 @@ Vercel : importer le dépôt, ajouter les 3 variables d'environnement, déployer
 - [x] Finale 20 boutons / 6 bombes : dernier survivant +3000, dernier éliminé +1500, le dernier du classement
       commence (règles validées par Anthony).
 - [x] Écran des box (numéros 1–7 uniquement, l'animateur peut choisir à la place d'un joueur).
-- [ ] Mode adultes (genre à l'inscription, 2 classements, épreuves adultes).
+- [x] Mode adultes (camp F / H à l'inscription, 2 classements, gagnante + gagnant). Contenu à fournir : photos
+      du bébé mystère (`public/photos/bebe/`), questions du quiz de Noël à personnaliser si voulu.
 - [ ] Admin : liste/suppression des parties de test, saut de phase.
 - [ ] Mise en ligne + répétition générale avec 5–6 vrais téléphones (Wi-Fi **et** 4G, tests de casse).
 

@@ -5,20 +5,27 @@ import blindtestAdultes from "@/content/blindtest-adultes.json";
 import memoire from "@/content/memoire.json";
 import justeprix from "@/content/justeprix.json";
 import quiestce from "@/content/quiestce.json";
+import quizNoel from "@/content/quiz-noel.json";
+import bebeMystere from "@/content/bebe-mystere.json";
 import programmeEnfants from "@/content/programme-enfants.json";
+import programmeAdultes from "@/content/programme-adultes.json";
 
 // Le contenu des épreuves vit dans src/content/*.json (séparé du code).
 // Pour ajouter une épreuve : créer le JSON, l'enregistrer ici, puis l'ajouter
 // à la liste "rounds" d'un programme.
 const ROUNDS: Record<string, Round> = Object.fromEntries(
-  ([quizTonton, blindtest, blindtestAdultes, memoire, justeprix, quiestce] as Round[]).map((r) => [r.id, r]),
+  ([quizTonton, blindtest, blindtestAdultes, memoire, justeprix, quiestce, quizNoel, bebeMystere] as Round[]).map((r) => [r.id, r]),
 );
 
 const PROGRAMMES: Record<string, Programme> = {
   [programmeEnfants.id]: programmeEnfants as Programme,
+  [programmeAdultes.id]: programmeAdultes as Programme,
 };
 
 export const DEFAULT_PROGRAMME_ID = programmeEnfants.id;
+/** Programme joué selon le mode choisi à la création de la partie. */
+export const programmeIdFor = (mode: "enfants" | "adultes") =>
+  mode === "adultes" ? programmeAdultes.id : programmeEnfants.id;
 
 export interface LoadedProgramme extends Programme {
   roundList: Round[];

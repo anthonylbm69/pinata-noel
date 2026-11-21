@@ -49,14 +49,16 @@ async function openIntro(game: GameRow, index: number) {
   if (error) throw error;
 }
 
+/** Fin des épreuves : finale, sinon box, sinon (mode adultes) fin de partie. */
+async function afterRounds(game: GameRow, prog: LoadedProgramme) {
+  if (prog.final) await startFinal(game, prog);
+  else await startBoxesOrEnd(game);
+}
+
 /** Après une question : question suivante, nouvelle épreuve, ou finale. */
 async function advance(game: GameRow, prog: LoadedProgramme) {
   const next = game.question_index + 1;
-  if (next >= prog.flat.length) {
-    if (prog.final) await startFinal(game, prog);
-    else await startBoxes(game);
-    return;
-  }
+  if (next >= prog.flat.length) return afterRounds(game, prog);
   if (prog.flat[next].roundIndex !== prog.flat[game.question_index].roundIndex) await openIntro(game, next);
   else await openQuestion(game, prog, next);
 }
@@ -71,7 +73,7 @@ async function startFinal(game: GameRow, prog: LoadedProgramme, explicit = false
   const lb = await computeLeaderboard(game);
   if (lb.length < 2) {
     if (explicit) throw new HttpError(409, "Il faut au moins 2 joueurs pour la finale");
-    return startBoxes(game);
+    return startBoxesOrEnd(game);
   }
   const order = [...lb].reverse().map((p) => p.id);
   const { error } = await supabaseAdmin().rpc("start_final", {
@@ -81,6 +83,11 @@ async function startFinal(game: GameRow, prog: LoadedProgramme, explicit = false
     p_bombs: prog.final!.bombs,
   });
   if (error) throw error;
+}
+
+async function startBoxesOrEnd(game: GameRow) {
+  if (game.box_count > 0) return startBoxes(game);
+  await setPhase(game, "end", { status: "finished", final_turn: null });
 }
 
 async function startBoxes(game: GameRow) {
@@ -152,7 +159,7 @@ export const POST = handle(async (req: Request, ctx: { params: Promise<{ code: s
       if (game.phase === "results" || game.phase === "leaderboard") await advance(game, prog);
       else if (game.phase === "final") {
         if (game.final_turn !== null) throw new HttpError(409, "La finale n'est pas terminée");
-        await startBoxes(game);
+        await startBoxesOrEnd(game);
       } else if (game.phase === "boxes") await setPhase(game, "end", { status: "finished" });
       else throw new HttpError(409, "Ferme d'abord la question en cours");
       break;
@@ -165,10 +172,8 @@ export const POST = handle(async (req: Request, ctx: { params: Promise<{ code: s
         throw new HttpError(409, "Aucune épreuve en cours");
       }
       const nextRound = prog.firstOfRound[flat.roundIndex + 1];
-      if (nextRound === undefined) {
-        if (prog.final) await startFinal(game, prog);
-        else await startBoxes(game);
-      } else await openIntro(game, nextRound);
+      if (nextRound === undefined) await afterRounds(game, prog);
+      else await openIntro(game, nextRound);
       break;
     }
 
@@ -179,6 +184,7 @@ export const POST = handle(async (req: Request, ctx: { params: Promise<{ code: s
       break;
     }
     case "goto-boxes": {
+      if (game.box_count <= 0) throw new HttpError(409, "Pas de box dans ce programme");
       await startBoxes(game);
       break;
     }
@@ -258,7 +264,14 @@ export const POST = handle(async (req: Request, ctx: { params: Promise<{ code: s
       const rows = BOT_NAMES.map((name, i) => ({ name, color: BOT_COLORS[i] }))
         .filter((b) => !taken.has(b.name.toLowerCase()))
         .slice(0, count)
-        .map((b) => ({ game_id: game.id, name: b.name, color: b.color, is_bot: true }));
+        .map((b, i) => ({
+          game_id: game.id,
+          name: b.name,
+          color: b.color,
+          is_bot: true,
+          // mode adultes : bots répartis dans les deux camps
+          ...(game.mode === "adultes" ? { gender: (taken.size + i) % 2 ? "H" : "F" } : {}),
+        }));
       if (rows.length) {
         const { error } = await db.from("players").insert(rows);
         if (error) throw error;
@@ -321,6 +334,27 @@ export const POST = handle(async (req: Request, ctx: { params: Promise<{ code: s
 
     // Libère un prénom : le prochain téléphone qui s'inscrit avec ce prénom
     // reprend ce joueur et ses points (téléphone changé, historique effacé…).
+    // Mode adultes : change le camp d'un joueur (erreur à l'inscription).
+    case "switch-gender": {
+      if (game.mode !== "adultes") throw new HttpError(409, "Pas de camps dans ce mode");
+      if (!body.playerId) throw new HttpError(400, "Joueur manquant");
+      const { data: p, error: gErr } = await db
+        .from("players")
+        .select("gender")
+        .eq("game_id", game.id)
+        .eq("id", body.playerId)
+        .maybeSingle();
+      if (gErr) throw gErr;
+      if (!p) throw new HttpError(404, "Joueur introuvable");
+      const { error } = await db
+        .from("players")
+        .update({ gender: p.gender === "F" ? "H" : "F" })
+        .eq("id", body.playerId);
+      if (error) throw error;
+      await bump(game.id);
+      break;
+    }
+
     case "release": {
       if (!body.playerId) throw new HttpError(400, "Joueur manquant");
       const { error } = await db

@@ -10,6 +10,7 @@ import { postJson } from "@/hooks/useGameState";
 export default function Home() {
   const router = useRouter();
   const [isTest, setIsTest] = useState(true);
+  const [mode, setMode] = useState<"enfants" | "adultes">("enfants");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
@@ -20,7 +21,7 @@ export default function Home() {
     setBusy(true);
     setError(null);
     try {
-      const { code, hostToken } = await postJson<{ code: string; hostToken: string }>("/api/games", { isTest });
+      const { code, hostToken } = await postJson<{ code: string; hostToken: string }>("/api/games", { isTest, mode });
       hostStore.set(code, hostToken);
       router.push(`/host/${code}`);
     } catch (e) {
@@ -38,6 +39,28 @@ export default function Home() {
         <section className="bg-card border-xred flex flex-1 flex-col gap-4 rounded-3xl border-4 p-6 text-left">
           <p className="text-xred text-sm font-semibold">SUR LA TÉLÉ</p>
           <h2 className="text-3xl font-bold">Animer une partie</h2>
+          <div className="grid grid-cols-2 gap-2 rounded-full bg-white/8 p-1">
+            {(
+              [
+                ["enfants", "🧒 Enfants"],
+                ["adultes", "🍷 Adultes"],
+              ] as const
+            ).map(([m, label]) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className={`rounded-full px-4 py-2 font-semibold ${mode === m ? "bg-white text-ink" : "text-xgrey"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xgrey -mt-2 text-sm">
+            {mode === "enfants"
+              ? "Quiz, blind test, mémoire, juste prix, qui est-ce, finale et box."
+              : "Blind test, quiz de Noël, bébé mystère · classements femmes / hommes."}
+          </p>
           <label className="text-xgrey flex items-center gap-3">
             <input type="checkbox" checked={isTest} onChange={(e) => setIsTest(e.target.checked)} className="h-5 w-5" />
             Partie de test

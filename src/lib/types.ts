@@ -2,6 +2,8 @@
 
 export type Phase = "lobby" | "intro" | "question" | "results" | "leaderboard" | "final" | "boxes" | "end";
 export type Mode = "enfants" | "adultes";
+/** Camp en mode adultes (choisi à l'inscription) : 2 classements séparés. */
+export type Gender = "F" | "H";
 
 // ---------------------------------------------------------------------------
 // Contenu des épreuves (src/content/*.json)
@@ -74,10 +76,13 @@ export interface PublicPlayer {
   isBot: boolean;
   /** prénom libéré par l'animateur : un nouveau téléphone peut le reprendre */
   released: boolean;
+  /** camp (mode adultes), null chez les enfants */
+  gender: Gender | null;
 }
 
 export interface LeaderboardEntry extends PublicPlayer {
   total: number;
+  /** rang dans la partie (enfants) ou dans son camp F / H (adultes) */
   rank: number;
 }
 
@@ -147,6 +152,8 @@ export interface GameState {
     isTest: boolean;
     version: number;
     hasFinal: boolean;
+    /** faux en mode adultes : pas de box, la partie se termine sur les classements */
+    hasBoxes: boolean;
     /** vrai si la question en cours est la dernière de son épreuve */
     lastInRound: boolean;
     /** vrai si c'est la toute dernière question */
@@ -177,6 +184,7 @@ export interface GameState {
     id: string;
     name: string;
     color: string;
+    gender: Gender | null;
     total: number;
     rank: number;
     current: {

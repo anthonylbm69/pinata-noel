@@ -16,7 +16,12 @@ const ROUND_ICONS: Record<string, string> = {
   quiestce: "🕵️",
 };
 
-const rankLabel = (r: number) => (r === 1 ? "1er" : `${r}e`);
+// Mode adultes : le rang est celui dans son camp (« 1re chez les femmes »).
+type Me = NonNullable<GameState["me"]>;
+const rankLabel = (r: number, me?: Me | null) =>
+  r === 1 ? (me?.gender === "F" ? "1re" : "1er") : `${r}e`;
+const campLabel = (me: Me | null) =>
+  me?.gender === "F" ? " chez les femmes" : me?.gender === "H" ? " chez les hommes" : "";
 
 export default function PlayerGame({ code }: { code: string }) {
   const router = useRouter();
@@ -244,7 +249,8 @@ export default function PlayerGame({ code }: { code: string }) {
             +{formatPoints(mine?.points ?? 0)} pts
           </p>
           <p className="text-xl">
-            Tu es <b>{rankLabel(me.rank)}</b> · {formatPoints(me.total)} pts
+            Tu es <b>{rankLabel(me.rank, me)}</b>
+            {campLabel(me)} · {formatPoints(me.total)} pts
           </p>
         </div>
       </Shell>
@@ -315,7 +321,8 @@ export default function PlayerGame({ code }: { code: string }) {
       <Shell header={header}>
         <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
           <p className="text-xgold text-lg font-semibold">{game.phase === "end" ? "CLASSEMENT FINAL" : "CLASSEMENT"}</p>
-          <p className="animate-pop text-8xl font-bold">{rankLabel(me.rank)}</p>
+          <p className="animate-pop text-8xl font-bold">{rankLabel(me.rank, me)}</p>
+          {campLabel(me) && <p className="text-xgrey -mt-2 text-xl">{campLabel(me).trim()}</p>}
           <p className="text-2xl">{formatPoints(me.total)} points</p>
           <p className="text-xgrey text-lg">
             {game.phase === "end" ? (myBox ? `Joyeux Noël ! Ta box : n° ${myBox} 🎁` : "Joyeux Noël ! 🎄") : "Regarde la télé…"}

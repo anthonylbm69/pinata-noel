@@ -6,12 +6,18 @@ import { Button, Kicker, PLAYER_COLORS } from "@/components/ui";
 import { playerStore } from "@/lib/storage";
 import { postJson } from "@/hooks/useGameState";
 
+type Gender = "F" | "H";
+
 export default function Join() {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [color, setColor] = useState(PLAYER_COLORS[1]);
   const [busy, setBusy] = useState(false);
+  const [gender, setGender] = useState<Gender | null>(null);
+  // mode de la partie (adultes → on demande le camp), lu dès que le code est tapé
+  const [mode, setMode] = useState<{ code: string; adultes: boolean } | null>(null);
+  const adultes = mode?.code === code && mode.adultes;
   const [error, setError] = useState<string | null>(null);
 
   // Code pré-rempli depuis le QR (?code=1234). Si déjà inscrit → reconnexion directe.
@@ -25,6 +31,21 @@ export default function Join() {
     if (playerStore.get(c)) router.replace(`/play/${c}`);
   }, [router]);
 
+  useEffect(() => {
+    if (code.length < 4) return;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => {
+      fetch(`/api/games/${code}/join`, { signal: ctrl.signal })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d: { mode?: string } | null) => d && setMode({ code, adultes: d.mode === "adultes" }))
+        .catch(() => {});
+    }, 250);
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
+  }, [code]);
+
   async function join(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -32,7 +53,7 @@ export default function Join() {
     try {
       const res = await postJson<{ playerId: string; token: string; name: string; color: string }>(
         `/api/games/${code}/join`,
-        { name, color },
+        { name, color, gender: adultes ? gender : undefined },
       );
       playerStore.set(code, res);
       router.push(`/play/${code}`);
@@ -87,9 +108,33 @@ export default function Join() {
             ))}
           </div>
         </div>
+        {adultes && (
+          <div>
+            <p className="text-xgrey mb-2 text-sm font-medium">Ton camp (un classement par camp)</p>
+            <div className="grid grid-cols-2 gap-3">
+              {(
+                [
+                  ["F", "👩 Femmes"],
+                  ["H", "👨 Hommes"],
+                ] as const
+              ).map(([g, label]) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setGender(g)}
+                  className={`rounded-2xl border-2 px-4 py-4 text-xl font-bold ${
+                    gender === g ? "border-xgold bg-white/15" : "border-white/20 bg-white/5"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {error && <p className="text-xred text-center font-semibold">{error}</p>}
         <div className="flex-1" />
-        <Button type="submit" disabled={busy || code.length < 4 || !name.trim()} className="w-full">
+        <Button type="submit" disabled={busy || code.length < 4 || !name.trim() || (adultes && !gender)} className="w-full">
           {busy ? "Connexion…" : "C'est parti !"}
         </Button>
       </form>

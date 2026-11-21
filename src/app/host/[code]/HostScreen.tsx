@@ -326,6 +326,14 @@ function Lobby({ state, onStart }: { state: GameState; onStart: () => void }) {
         <h1 className="text-6xl font-bold">En attente des joueurs…</h1>
         <p className="text-xgrey text-2xl">
           {n} joueur{n > 1 ? "s" : ""} connecté{n > 1 ? "s" : ""}
+          {state.game.mode === "adultes" && (
+            <>
+              {" "}· 👩 {state.players.filter((p) => p.gender === "F").length} femme
+              {state.players.filter((p) => p.gender === "F").length > 1 ? "s" : ""} · 👨{" "}
+              {state.players.filter((p) => p.gender === "H").length} homme
+              {state.players.filter((p) => p.gender === "H").length > 1 ? "s" : ""}
+            </>
+          )}
         </p>
         <div className="flex flex-wrap gap-3">
           {state.players.map((p) => (
@@ -336,7 +344,8 @@ function Lobby({ state, onStart }: { state: GameState; onStart: () => void }) {
         </div>
         {!state.game.isTest && state.players.some((p) => p.isBot) && (
           <p className="text-xred text-xl font-semibold">
-            ⚠ Il reste des bots : retire-les (⚙ → Retirer les bots) avant de jouer pour de vrai, sinon ils prendront des box.
+            ⚠ Il reste des bots : retire-les (⚙ → Retirer les bots) avant de jouer pour de vrai
+            {state.game.hasBoxes ? ", sinon ils prendront des box." : "."}
           </p>
         )}
         <div>
@@ -502,7 +511,9 @@ function QuestionView({ state, remaining }: { state: GameState; remaining: numbe
 }
 
 function nextLabel(state: GameState) {
-  if (state.game.lastQuestion) return state.game.hasFinal ? "La finale 💣 →" : "Les box 🎁 →";
+  if (state.game.lastQuestion) {
+    return state.game.hasFinal ? "La finale 💣 →" : state.game.hasBoxes ? "Les box 🎁 →" : "Les gagnants 🏆 →";
+  }
   if (state.game.lastInRound) return "Épreuve suivante →";
   return "Question suivante →";
 }
@@ -623,10 +634,42 @@ function PriceResultsView({ state, act }: { state: GameState; act: Act }) {
   );
 }
 
+export const CAMPS = [
+  { gender: "F", label: "Femmes", icon: "👩", winner: "Gagnante" },
+  { gender: "H", label: "Hommes", icon: "👨", winner: "Gagnant" },
+] as const;
+
 export function Leaderboard({ state, limit = 10 }: { state: GameState; limit?: number }) {
+  // Mode adultes : un classement par camp, côte à côte.
+  if (state.game.mode === "adultes") {
+    return (
+      <div className="grid w-full max-w-6xl grid-cols-2 gap-8">
+        {CAMPS.map((c) => (
+          <div key={c.gender} className="flex flex-col gap-3">
+            <h2 className="text-center text-3xl font-bold">
+              {c.icon} {c.label}
+            </h2>
+            <LeaderboardList
+              entries={state.leaderboard.filter((p) => p.gender === c.gender)}
+              limit={limit}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
     <div className="flex w-full max-w-3xl flex-col gap-2">
-      {state.leaderboard.slice(0, limit).map((p, i) => (
+      <LeaderboardList entries={state.leaderboard} limit={limit} />
+    </div>
+  );
+}
+
+function LeaderboardList({ entries, limit }: { entries: GameState["leaderboard"]; limit: number }) {
+  if (!entries.length) return <p className="text-xgrey text-center">Personne</p>;
+  return (
+    <div className="flex flex-col gap-2">
+      {entries.slice(0, limit).map((p, i) => (
         <div
           key={p.id}
           className={`animate-rise flex items-center gap-4 rounded-2xl px-5 py-2 ${p.rank === 1 ? "bg-xgold/20" : "bg-white/5"}`}
@@ -639,6 +682,46 @@ export function Leaderboard({ state, limit = 10 }: { state: GameState; limit?: n
         </div>
       ))}
     </div>
+  );
+}
+
+// Fin du mode adultes : la gagnante et le gagnant, puis les deux classements.
+function EndAdultsView({ state }: { state: GameState }) {
+  return (
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-10 p-10">
+      <Kicker>Classement final</Kicker>
+      <h1 className="text-7xl font-bold">Joyeux Noël ! 🎄</h1>
+      <div className="flex items-end gap-16">
+        {CAMPS.map((c, k) => {
+          const camp = state.leaderboard.filter((p) => p.gender === c.gender);
+          const winners = camp.filter((p) => p.rank === 1 && p.total > 0);
+          return (
+            <div
+              key={c.gender}
+              className="animate-pop flex w-80 flex-col items-center gap-3"
+              style={{ animationDelay: `${k * 500}ms` }}
+            >
+              <p className="text-xgold text-2xl font-semibold">
+                🏆 {c.winner}
+                {winners.length > 1 ? "s ex aequo" : ""} · {c.label}
+              </p>
+              {winners.length ? (
+                winners.map((w) => (
+                  <div key={w.id} className="flex flex-col items-center gap-2">
+                    <Avatar color={w.color} size={110} />
+                    <p className="text-5xl font-bold">{w.name}</p>
+                    <p className="text-xgrey text-xl">{formatPoints(w.total)} pts</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xgrey text-xl">Personne</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <Leaderboard state={state} limit={20} />
+    </main>
   );
 }
 
@@ -662,6 +745,7 @@ function LeaderboardView({ state, act }: { state: GameState; act: Act }) {
 }
 
 function EndView({ state }: { state: GameState }) {
+  if (state.game.mode === "adultes") return <EndAdultsView state={state} />;
   const podium = state.leaderboard.slice(0, 3);
   const boxOf = new Map(state.boxes?.picks.map((p) => [p.playerId, p.box]) ?? []);
   return (

@@ -37,6 +37,14 @@ Points : le plus proche sans dépasser 1000, puis 700, 500, 350, 250, 150, 100 ;
 2. Remplace les prénoms dans `choices` (ceux écrits sont des exemples).
 La photo apparaît très floue et devient nette à la fin du chrono. Elle n'est affichée que sur la télé.
 
+## 🍷 Mode adultes — `programme-adultes.json`
+Épreuves : blind test adultes → quiz de Noël → bébé mystère. Pas de finale ni de box : on termine sur la
+gagnante (femmes) et le gagnant (hommes).
+- **Quiz de Noël** (`quiz-noel.json`) : 8 questions de culture de Noël, jouables telles quelles. Remplace-les par
+  des questions sur la famille si tu veux.
+- **Bébé mystère** (`bebe-mystere.json`) : photos de bébé des adultes dans `public/photos/bebe/`, nommées
+  `01.jpg`, `02.jpg`… et les prénoms dans `choices` (ceux écrits sont des exemples).
+
 ## 💣 Finale et 🎁 box — `programme-enfants.json`
 - `rounds` : l'ordre des épreuves (tu peux en retirer une).
 - `final` : 20 boutons, 6 bombes, le dernier survivant +3000, le dernier éliminé +1500.
