@@ -58,6 +58,9 @@ create table players (
   gender       text check (gender in ('F', 'H')),
   device_token uuid not null default gen_random_uuid(),
   is_bot       boolean not null default false,
+  -- L'animateur a « libéré » ce prénom : le prochain téléphone qui s'inscrit
+  -- avec reprend ce joueur et ses points (téléphone changé, historique effacé…).
+  claimable    boolean not null default false,
   created_at   timestamptz not null default now()
 );
 create unique index players_unique_name on players (game_id, lower(name));
@@ -207,7 +210,8 @@ declare
   v_elapsed int;
   v_points  int;
 begin
-  select * into g from games where id = p_game;
+  -- Verrou : une réponse ne peut pas se glisser pendant la fermeture de la question.
+  select * into g from games where id = p_game for update;
   if g.id is null then
     return query select false, 'unknown_game', 0, 0; return;
   end if;
@@ -288,6 +292,23 @@ begin
    where id = p_game;
 end $$;
 
+-- Finale : termine la partie de boutons. Le(s) survivant(s) gagnent +p_win,
+-- le dernier éliminé +p_second. Appelée sous le verrou de la partie.
+create or replace function finish_final(p_game uuid, p_win int, p_second int)
+returns void language plpgsql as $$
+begin
+  update final_players set place = 1
+   where game_id = p_game and out_at is null;
+  insert into adjustments (game_id, player_id, points, reason)
+  select p_game, fp.player_id, p_win, 'finale' from final_players fp
+   where fp.game_id = p_game and fp.out_at is null;
+  insert into adjustments (game_id, player_id, points, reason)
+  select p_game, fp.player_id, p_second, 'finale' from final_players fp
+   where fp.game_id = p_game and fp.out_at is not null
+   order by fp.out_at desc limit 1;
+  update games set final_turn = null, version = version + 1, updated_at = now() where id = p_game;
+end $$;
+
 -- Finale : un joueur appuie sur un bouton. Tout est vérifié et fait ici,
 -- sous verrou, pour éviter les doubles appuis.
 --   bombe → le joueur est éliminé ; s'il ne reste qu'un joueur, il gagne
@@ -326,7 +347,6 @@ begin
 
   -- Joueurs encore en jeu (un joueur exclu de la partie disparaît d'ici).
   select count(*) into v_alive from final_players fp
-    join players p on p.id = fp.player_id
    where fp.game_id = p_game and fp.out_at is null;
 
   if b.is_bomb then
@@ -338,31 +358,50 @@ begin
   select count(*) into v_left from final_buttons where game_id = p_game and pressed_at is null;
 
   if v_alive <= 1 or v_left = 0 then
-    -- Fin : le(s) survivant(s) gagnent, le dernier éliminé est 2e.
-    update final_players set place = 1
-     where game_id = p_game and out_at is null;
-    insert into adjustments (game_id, player_id, points, reason)
-    select p_game, fp.player_id, p_win, 'finale' from final_players fp
-      join players p on p.id = fp.player_id
-     where fp.game_id = p_game and fp.out_at is null;
-    insert into adjustments (game_id, player_id, points, reason)
-    select p_game, fp.player_id, p_second, 'finale' from final_players fp
-     where fp.game_id = p_game and fp.out_at is not null
-     order by fp.out_at desc limit 1;
-    update games set final_turn = null, version = version + 1, updated_at = now() where id = p_game;
+    perform finish_final(p_game, p_win, p_second);
     return query select true, 'ok', b.is_bomb, true; return;
   end if;
 
   -- Tour suivant : prochain joueur encore en jeu dans l'ordre de passage.
   select turn_order into v_order from final_players where game_id = p_game and player_id = p_player;
   select fp.player_id into v_next from final_players fp
-    join players p on p.id = fp.player_id
    where fp.game_id = p_game and fp.out_at is null
    order by (fp.turn_order <= v_order), fp.turn_order
    limit 1;
 
   update games set final_turn = v_next, version = version + 1, updated_at = now() where id = p_game;
   return query select true, 'ok', b.is_bomb, false;
+end $$;
+
+-- Finale : un joueur a été exclu de la partie (sa ligne final_players a
+-- disparu avec lui). S'il ne reste qu'un survivant, la finale se termine ;
+-- si c'était son tour, on passe au suivant dans l'ordre.
+create or replace function final_after_kick(p_game uuid, p_turn_order int, p_win int, p_second int)
+returns void language plpgsql as $$
+declare
+  g       games%rowtype;
+  v_alive int;
+  v_next  uuid;
+begin
+  select * into g from games where id = p_game for update;
+  if g.phase <> 'final' or g.final_turn is null then return; end if;
+
+  select count(*) into v_alive from final_players where game_id = p_game and out_at is null;
+  if v_alive <= 1 then
+    perform finish_final(p_game, p_win, p_second);
+    return;
+  end if;
+
+  if not exists (select 1 from final_players
+                  where game_id = p_game and player_id = g.final_turn and out_at is null) then
+    select player_id into v_next from final_players
+     where game_id = p_game and out_at is null
+     order by (turn_order < p_turn_order), turn_order
+     limit 1;
+    update games set final_turn = v_next, version = version + 1, updated_at = now() where id = p_game;
+  else
+    perform bump_game(p_game);
+  end if;
 end $$;
 
 -- Ces fonctions ne sont appelées que par le serveur (clé service_role) :

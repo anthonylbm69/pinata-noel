@@ -88,9 +88,13 @@ export default function HostPanel({
                 {pending === "skip" ? "Confirmer ?" : "Sauter cette épreuve"}
               </Small>
             )}
-            {state.game.hasFinal && phase !== "final" && phase !== "lobby" && phase !== "end" && (
+            {state.game.hasFinal && phase !== "lobby" && phase !== "end" && (
               <Small onClick={() => confirmThen("final", () => void act("goto-final"))}>
-                {pending === "final" ? "Confirmer ?" : phase === "boxes" ? "Rejouer la finale" : "Aller à la finale"}
+                {pending === "final"
+                  ? "Confirmer ? (annule ses bonus)"
+                  : phase === "boxes" || phase === "final"
+                    ? "Rejouer la finale"
+                    : "Aller à la finale"}
               </Small>
             )}
             {phase !== "boxes" && phase !== "lobby" && phase !== "end" && (
@@ -118,11 +122,19 @@ export default function HostPanel({
               {state.leaderboard.map((p) => (
                 <div key={p.id} className="flex items-center gap-2">
                   <Avatar color={p.color} size={24} />
-                  <span className="min-w-0 flex-1 truncate font-semibold">{p.name}</span>
+                  <span className="min-w-0 flex-1 truncate font-semibold">
+                    {p.name}
+                    {p.released && <span className="text-xgold ml-1 text-xs font-normal">(libéré)</span>}
+                  </span>
                   <span className="text-xgold shrink-0 text-right text-sm">{formatPoints(p.total)}</span>
                   <Tiny onClick={() => void act("adjust", { playerId: p.id, points: -500 })}>−500</Tiny>
                   <Tiny onClick={() => void act("adjust", { playerId: p.id, points: 500 })}>+500</Tiny>
                   <Tiny onClick={() => void act("adjust", { playerId: p.id, points: 1000 })}>+1000</Tiny>
+                  {!p.isBot && !p.released && (
+                    <Tiny onClick={() => void act("release", { playerId: p.id })}>
+                      <span title="Libérer le prénom : un autre téléphone pourra reprendre ce joueur">🔓</span>
+                    </Tiny>
+                  )}
                   <Tiny
                     onClick={() => confirmThen(`kick-${p.id}`, () => void act("kick", { playerId: p.id }))}
                     danger

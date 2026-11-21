@@ -15,7 +15,10 @@ export default function Join() {
   const [error, setError] = useState<string | null>(null);
 
   // Code pré-rempli depuis le QR (?code=1234). Si déjà inscrit → reconnexion directe.
+  // (Next garde l'état des pages quittées : en revenant ici, par exemple après
+  // une exclusion, le bouton ne doit pas rester bloqué sur « Connexion… ».)
   useEffect(() => {
+    setBusy(false);
     const c = new URLSearchParams(window.location.search).get("code")?.replace(/\D/g, "") ?? "";
     if (!c) return;
     setCode(c);

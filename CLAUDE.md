@@ -58,7 +58,7 @@ Tél   /play/[code] ──┘   (clé service_role)    └── Realtime : UPDA
 |---|---|
 | `games` | une partie = une session : code, mode, phase, question en cours, heure d'ouverture, flag test, version. **Seule table lisible par `anon`** (rien de secret dedans). |
 | `game_secrets` | jeton animateur |
-| `players` | prénom (unique par partie, insensible à la casse), couleur, genre, **jeton d'appareil** (reconnexion), `is_bot` |
+| `players` | prénom (unique par partie, insensible à la casse **et aux accents**), couleur, genre, **jeton d'appareil** (reconnexion), `is_bot`, `claimable` (prénom libéré par l'animateur) |
 | `answers` | heure posée par la base, points ; **unique (partie, joueur, question)** contre les doubles réponses |
 | `adjustments` | points donnés/retirés à la main (plan B) et bonus de la finale (`reason = 'finale'`) |
 | `final_buttons` | 20 boutons, `is_bomb` tiré par la base, **jamais envoyé** tant que le bouton n'est pas appuyé |
@@ -66,7 +66,7 @@ Tél   /play/[code] ──┘   (clé service_role)    └── Realtime : UPDA
 | `boxes` | numéro de box choisi par joueur (unique), ordre = classement |
 
 Fonctions SQL : `open_question` (durée par épreuve), `open_intro`, `close_question`, `close_price_question`,
-`submit_answer` (refuse si fermée, en retard > T+1,5 s, ou en double), `start_final`, `press_button` (tour,
+`submit_answer` (verrou sur la partie ; refuse si fermée, en retard > T+1,5 s, ou en double), `start_final`, `finish_final`, `final_after_kick`, `press_button` (tour,
 bombe, élimination et bonus sous verrou), `server_now_ms`, `bump_game`. Classement = somme `answers.points` + `adjustments.points` (calculé dans
 `buildState`, jamais stocké).
 
@@ -74,13 +74,18 @@ bombe, élimination et bonus sous verrou), `server_now_ms`, `bump_game`. Classem
 - `src/lib/game-server.ts` — chargement partie, auth animateur/joueur, `buildState` (état envoyé aux clients ;
   la bonne réponse n'est envoyée qu'en phase `results`).
 - `src/app/api/games/[code]/host/route.ts` — actions animateur : start, close, show-leaderboard, next,
-  restart-question, end, reset, add-bots, remove-bots, bot-answer, adjust, kick.
+  restart-question, end, reset, add-bots, remove-bots, bot-answer, adjust, release, kick.
+  Les actions de déroulé (start, begin-round, show-leaderboard, next, skip-round) envoient `at` =
+  « phase:question » vu par la télé : le serveur ignore l'action si l'état a changé (double clic, deux télés).
 - `src/hooks/useGameState.ts` — synchro Realtime + polling, chrono.
 - `src/app/host/[code]/HostScreen.tsx` (lobby, intro, questions, résultats, son du blind test) + `HostFinal.tsx`
   (finale, box) + `HostPanel.tsx` (⚙ : bots, relancer, sauter une épreuve, aller à la finale/aux box, points à
   la main, lien animateur).
 - Routes joueur : `answer`, `final` (appui sur un bouton), `box` (choix d'une box).
 - `src/app/play/[code]/PlayerGame.tsx` — écrans téléphone.
+- `src/lib/game-audio.ts` — musique de fond + tic-tac (synthétisés en Web Audio, aucun fichier) joués par la
+  télé seule : tempo fixe, baissée pendant les questions ; tic-tac à 1/s pendant toute
+  la question puis 2/s sur les 5 dernières s, sonnerie à 0. Pas de musique pendant le blind test. Bouton 🔊/🔇 en haut à droite de la télé.
 - `src/content/*.json` — **contenu des épreuves, séparé du code**. Guide : `CONTENU.md`.
   `npm run check:content` liste les mp3 / photos manquants. Fichiers dans `public/audio/blindtest/` et
   `public/photos/quiestce/`.
@@ -118,6 +123,20 @@ Vercel : importer le dépôt, ajouter les 3 variables d'environnement, déployer
 - `useRemaining` ne doit jamais renvoyer la valeur de la question précédente (sinon la télé refermait la
   question suivante au bout de 1,2 s).
 - Pendant une question, les points de cette question ne comptent pas dans les totaux envoyés (spoiler).
+
+## Cas limites gérés (revue du 21/11, testés par script + navigateur)
+- Double clic / télécommande qui répète / deux écrans animateur → `at` + verrou côté télé, une seule étape.
+- Fermeture de question qui échoue (réseau) → la télé réessaie toutes les 3 s.
+- Réponse envoyée pendant la fermeture → `submit_answer` verrouille la partie (refusée proprement).
+- Téléphone changé / historique effacé → ⚙ 🔓 « libérer » le prénom : le prochain téléphone qui tape ce prénom
+  reprend le joueur et ses points, l'ancien est déconnecté. Sans ça : « demande à l'animateur ».
+- « ines » = « Inès » = « INES » (pas de doublon par accent/majuscule).
+- Joueur exclu pendant la finale → tour suivant, ou fin de finale s'il ne reste qu'un survivant.
+- Finale rejouée → les bonus de la précédente sont annulés. Moins de 2 joueurs → directement aux box.
+- Question relancée → les téléphones repartent de zéro ; le champ du juste prix se vide à chaque question.
+- Requêtes coupées au bout de 8–10 s (pas de téléphone bloqué sur « Envoi… »), messages réseau en français.
+- Joueur exclu → son téléphone recharge la page d'inscription (Next garde l'état des pages : bouton débloqué).
+- Arrivé pendant la finale → écran spectateur. Démarrer sans joueur refusé. Bots dans une vraie partie → alerte au lobby.
 
 ## Risques à garder en tête
 - Téléphone verrouillé / onglet en arrière-plan → reconnexion par jeton + rechargement de l'état (fait).

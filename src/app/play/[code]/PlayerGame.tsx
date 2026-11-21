@@ -39,15 +39,17 @@ export default function PlayerGame({ code }: { code: string }) {
   useEffect(() => {
     if (error && (error.status === 401 || error.status === 404)) {
       playerStore.clear(code);
-      router.replace(`/play?code=${code}`);
+      // Rechargement complet : repart d'un formulaire d'inscription tout neuf.
+      window.location.replace(`/play?code=${code}`);
     }
-  }, [error, code, router]);
+  }, [error, code]);
 
   const [sending, setSending] = useState<number | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const qi = state?.question?.index ?? -1;
   const phase = state?.game.phase;
-  const step = `${phase}-${qi}-${state?.final?.buttons.filter((b) => b.pressed).length ?? 0}-${state?.boxes?.picks.length ?? 0}`;
+  // openedAt : une question relancée par l'animateur repart de zéro.
+  const step = `${phase}-${qi}-${state?.game.openedAt ?? ""}-${state?.final?.buttons.filter((b) => b.pressed).length ?? 0}-${state?.boxes?.picks.length ?? 0}`;
   useEffect(() => {
     setSending(null);
     setSendError(null);
@@ -143,10 +145,10 @@ export default function PlayerGame({ code }: { code: string }) {
                 <Shape kind={style.shape} className="h-14 w-14" />
               </div>
             )}
-            {sendError ? (
+            {sendError && !mine ? (
               <>
                 <p className="text-xred text-2xl font-bold">{sendError}</p>
-                {!mine && remaining !== 0 && (
+                {remaining !== 0 && (
                   <button onClick={retry} className="rounded-full bg-white/15 px-6 py-3 text-lg font-semibold">
                     Réessayer
                   </button>
@@ -177,7 +179,7 @@ export default function PlayerGame({ code }: { code: string }) {
           <span className="text-xgold w-12 text-right text-lg font-bold">{Math.ceil((remaining ?? 0) / 1000)} s</span>
         </div>
         {isPrice ? (
-          <PriceInput question={q.text} emoji={q.emoji} disabled={remaining === 0} onSubmit={answer} />
+          <PriceInput key={`${q.index}-${game.openedAt}`} question={q.text} emoji={q.emoji} disabled={remaining === 0} onSubmit={answer} />
         ) : (
           <>
             <p className="text-xgrey text-center">
@@ -415,7 +417,16 @@ function FinalPhone({
       </div>
     );
   }
-  if (mine?.out) {
+  if (!mine) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+        <span className="text-8xl">💣</span>
+        <h1 className="text-3xl font-bold">La finale est en cours</h1>
+        <p className="text-xgrey text-lg">{turnName ? `Au tour de ${turnName}…` : "Regarde la télé…"}</p>
+      </div>
+    );
+  }
+  if (mine.out) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
         <span className="animate-pop text-8xl">💥</span>

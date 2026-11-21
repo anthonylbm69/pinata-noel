@@ -33,7 +33,7 @@ export function useGameState(code: string, auth: Auth | null) {
         auth.role === "host" ? { host: auth.token } : { player: auth.playerId, token: auth.token },
       );
       const t0 = Date.now();
-      const res = await fetch(`/api/games/${code}/state?${params}`, { cache: "no-store" });
+      const res = await fetchWithTimeout(`/api/games/${code}/state?${params}`, { cache: "no-store" }, 8000);
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError({ status: res.status, message: body.error ?? "Erreur" });
@@ -122,13 +122,29 @@ export function useRemaining(state: GameState | null, serverNow: () => number) {
   return key && tick?.key === key ? tick.ms : null;
 }
 
+/** fetch qui abandonne au bout de `ms` (4G capricieuse : on ne reste pas bloqué). */
+async function fetchWithTimeout(url: string, init: RequestInit, ms: number) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function postJson<T = unknown>(url: string, body: unknown): Promise<T> {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(
+      url,
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+      10000,
+    );
+  } catch {
+    throw new Error("Connexion perdue, réessaie");
+  }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error ?? "Erreur");
+  if (!res.ok) throw new Error(data.error ?? (res.status >= 500 ? "Le serveur a un souci, réessaie" : "Erreur"));
   return data as T;
 }

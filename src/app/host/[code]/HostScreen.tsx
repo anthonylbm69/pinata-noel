@@ -13,13 +13,16 @@ import {
   Shape,
   formatPoints,
 } from "@/components/ui";
-import { hostStore } from "@/lib/storage";
+import { hostStore, soundStore } from "@/lib/storage";
+import { gameAudio, type MusicMode } from "@/lib/game-audio";
 import { postJson, useGameState, useRemaining, type Auth } from "@/hooks/useGameState";
 import type { GameState } from "@/lib/types";
 import HostPanel from "./HostPanel";
 import { BoxesView, FinalView } from "./HostFinal";
 
 export type Act = (a: string, e?: Record<string, unknown>) => Promise<void>;
+
+const NAV_ACTIONS = new Set(["start", "begin-round", "show-leaderboard", "next", "skip-round"]);
 
 export default function HostScreen({ code }: { code: string }) {
   const [token, setToken] = useState<string | null | undefined>(undefined);
@@ -41,16 +44,29 @@ export default function HostScreen({ code }: { code: string }) {
   const remaining = useRemaining(state, serverNow);
 
   const [actionError, setActionError] = useState<string | null>(null);
+  // Dernier état vu, pour dire au serveur « je clique depuis tel écran » :
+  // un double clic (ou une télécommande qui répète) ne saute pas deux étapes.
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+  const navBusy = useRef(false);
   const act: Act = useCallback(
     async (action: string, extra: Record<string, unknown> = {}) => {
       if (!token) return;
       const quiet = action.startsWith("bot-") || action === "close";
+      const nav = NAV_ACTIONS.has(action);
+      if (nav && navBusy.current) return;
+      if (nav) navBusy.current = true;
+      const g = stateRef.current?.game;
+      const at = nav && g ? `${g.phase}:${g.questionIndex}` : undefined;
       try {
-        await postJson(`/api/games/${code}/host`, { token, action, ...extra });
+        await postJson(`/api/games/${code}/host`, { token, action, at, ...extra });
         if (!quiet) setActionError(null);
       } catch (e) {
         if (!quiet) setActionError((e as Error).message);
       } finally {
+        if (nav) navBusy.current = false;
         void refresh();
       }
     },
@@ -85,6 +101,7 @@ export default function HostScreen({ code }: { code: string }) {
         className={`absolute top-4 right-4 h-3 w-3 rounded-full ${live ? "bg-xgreen" : "bg-xred"}`}
       />
       <BlindTestAudio state={state} />
+      <GameSound state={state} remaining={remaining} />
       {phase === "lobby" && <Lobby state={state} onStart={() => act("start")} />}
       {phase === "intro" && <IntroView state={state} remaining={remaining} act={act} />}
       {phase === "question" && <QuestionView state={state} remaining={remaining} />}
@@ -100,15 +117,16 @@ export default function HostScreen({ code }: { code: string }) {
 }
 
 // Ferme la question quand le chrono est fini ou que tout le monde a répondu.
+// Si la fermeture échoue (réseau), on réessaie au bout de 3 s.
 function useAutoClose(state: GameState | null, remaining: number | null, act: Act) {
-  const closed = useRef<string>("");
+  const closed = useRef<{ key: string; at: number }>({ key: "", at: 0 });
   useEffect(() => {
     if (!state || state.game.phase !== "question") return;
     const key = `${state.game.questionIndex}-${state.game.openedAt}`;
-    if (closed.current === key) return;
+    if (closed.current.key === key && Date.now() - closed.current.at < 3000) return;
     const everyone = state.players.length > 0 && state.answeredCount >= state.players.length;
     if (remaining === 0 || everyone) {
-      closed.current = key;
+      closed.current = { key, at: Date.now() };
       // petit délai pour laisser arriver les réponses de la dernière seconde
       setTimeout(() => void act("close", { questionIndex: state.game.questionIndex }), everyone ? 600 : 1200);
     }
@@ -149,6 +167,69 @@ function useBots(state: GameState | null, act: Act) {
     }
     // Les timers ne sont pas annulés au re-render (sinon les bots ne joueraient jamais).
   }, [state, act]);
+}
+
+// Musique de fond + tic-tac du chrono (synthétisés, voir src/lib/game-audio.ts).
+// Pas de musique pendant le blind test (l'extrait joue déjà), mais le tic-tac oui.
+// Bouton 🔊/🔇 en haut à droite ; le choix est gardé dans ce navigateur.
+function GameSound({ state, remaining }: { state: GameState; remaining: number | null }) {
+  const [on, setOn] = useState(true);
+  const [locked, setLocked] = useState(false);
+
+  useEffect(() => {
+    setOn(soundStore.get());
+    // les navigateurs bloquent le son tant qu'on n'a pas cliqué / appuyé sur une touche
+    const unlock = () => {
+      gameAudio().unlock();
+      setTimeout(() => setLocked(gameAudio().locked), 300);
+    };
+    document.addEventListener("pointerdown", unlock);
+    document.addEventListener("keydown", unlock);
+    const id = setInterval(() => setLocked(gameAudio().locked), 1000);
+    gameAudio().unlock(); // marche déjà si la page a été ouverte par un clic
+    return () => {
+      document.removeEventListener("pointerdown", unlock);
+      document.removeEventListener("keydown", unlock);
+      clearInterval(id);
+    };
+  }, []);
+
+  useEffect(() => {
+    gameAudio().setEnabled(on);
+  }, [on]);
+
+  const phase = state.game.phase;
+  const blind = !!state.question?.audio && (phase === "question" || phase === "results");
+  const mode: MusicMode = blind ? "off" : phase === "question" ? "play" : "calm";
+  useEffect(() => {
+    gameAudio().setMusic(mode);
+  }, [mode]);
+
+  // tic-tac : pendant une question (sauf si tout le monde a déjà répondu) et
+  // pendant l'affichage chronométré de la mémoire
+  const everyone = state.players.length > 0 && state.answeredCount >= state.players.length;
+  const counting = (phase === "question" && !everyone) || phase === "intro";
+  const cdKey = counting && remaining !== null ? `${phase}|${state.game.questionIndex}|${state.game.openedAt}` : null;
+  useEffect(() => {
+    gameAudio().setCountdown(cdKey ? remaining : null, cdKey);
+  }, [cdKey, remaining]);
+
+  // en quittant la télé, on coupe tout
+  useEffect(() => () => gameAudio().setMusic("off"), []);
+
+  return (
+    <button
+      onClick={() => {
+        const next = locked ? true : !on;
+        soundStore.set(next);
+        setOn(next);
+      }}
+      title={on ? "Couper la musique" : "Remettre la musique"}
+      className="absolute top-2 right-10 z-20 rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-white/70 hover:bg-white/20"
+    >
+      {on && locked ? "🔈 Cliquer pour la musique" : on ? "🔊" : "🔇"}
+    </button>
+  );
 }
 
 // Blind test : la musique est jouée UNIQUEMENT par la télé (pendant la question
@@ -252,6 +333,11 @@ function Lobby({ state, onStart }: { state: GameState; onStart: () => void }) {
             </span>
           ))}
         </div>
+        {!state.game.isTest && state.players.some((p) => p.isBot) && (
+          <p className="text-xred text-xl font-semibold">
+            ⚠ Il reste des bots : retire-les (⚙ → Retirer les bots) avant de jouer pour de vrai, sinon ils prendront des box.
+          </p>
+        )}
         <div>
           <Button onClick={onStart} disabled={n === 0}>
             Démarrer ({n})

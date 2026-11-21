@@ -72,6 +72,8 @@ export interface PublicPlayer {
   name: string;
   color: string;
   isBot: boolean;
+  /** prénom libéré par l'animateur : un nouveau téléphone peut le reprendre */
+  released: boolean;
 }
 
 export interface LeaderboardEntry extends PublicPlayer {

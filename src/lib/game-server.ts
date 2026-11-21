@@ -36,6 +36,7 @@ interface PlayerRow {
   name: string;
   color: string;
   is_bot: boolean;
+  claimable: boolean;
   device_token: string;
   created_at: string;
 }
@@ -96,7 +97,7 @@ export async function bump(gameId: string) {
 }
 
 function toPublic(p: PlayerRow): PublicPlayer {
-  return { id: p.id, name: p.name, color: p.color, isBot: p.is_bot };
+  return { id: p.id, name: p.name, color: p.color, isBot: p.is_bot, released: !!p.claimable };
 }
 
 type Q<T> = PromiseLike<{ data: T[] | null; error: unknown }>;

@@ -48,3 +48,9 @@ export const playerStore = {
   set: (code: string, auth: PlayerAuth) => write(`pinata:player:${code}`, auth),
   clear: (code: string) => remove(`pinata:player:${code}`),
 };
+
+/** Musique / tic-tac de la télé activés (oui par défaut). */
+export const soundStore = {
+  get: () => read<boolean>("pinata:sound") ?? true,
+  set: (on: boolean) => write("pinata:sound", on),
+};

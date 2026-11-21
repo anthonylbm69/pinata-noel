@@ -4,6 +4,12 @@ import { bump, getGame } from "@/lib/game-server";
 import { handle, ok, readJson, HttpError } from "@/lib/http";
 
 const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+const TAKEN = "Ce prénom est déjà pris. Si c'est toi (téléphone changé…), demande à l'animateur de le libérer (⚙ → 🔓).";
+
+/** Clé de comparaison des prénoms : sans accents, sans majuscules. */
+function nameKey(name: string) {
+  return name.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+}
 
 export const POST = handle(async (req: Request, ctx: { params: Promise<{ code: string }> }) => {
   const { code } = await ctx.params;
@@ -30,13 +36,37 @@ export const POST = handle(async (req: Request, ctx: { params: Promise<{ code: s
   if (!name) throw new HttpError(400, "Choisis un prénom");
   const color = COLOR_RE.test(String(body.color)) ? String(body.color) : "#2a9d88";
 
+  // Prénom déjà pris (sans tenir compte des accents ni des majuscules :
+  // « ines » = « Inès ») ? Si l'animateur l'a libéré, ce téléphone reprend le
+  // joueur et ses points avec un nouveau jeton ; l'ancien téléphone est déconnecté.
+  const { data: others, error: oErr } = await db.from("players").select("id, name, claimable").eq("game_id", game.id);
+  if (oErr) throw oErr;
+  const taken = (others ?? []).find((p) => nameKey(p.name) === nameKey(name));
+  if (taken) {
+    if (taken.claimable) {
+      const { data: claimed, error: cErr } = await db
+        .from("players")
+        .update({ claimable: false, device_token: crypto.randomUUID() })
+        .eq("id", taken.id)
+        .eq("claimable", true)
+        .select("id, name, color, device_token")
+        .maybeSingle();
+      if (cErr) throw cErr;
+      if (claimed) {
+        await bump(game.id);
+        return ok({ playerId: claimed.id, token: claimed.device_token, name: claimed.name, color: claimed.color });
+      }
+    }
+    throw new HttpError(409, TAKEN);
+  }
+
   const { data, error } = await db
     .from("players")
     .insert({ game_id: game.id, name, color })
     .select("id, name, color, device_token")
     .single();
   if (error) {
-    if (error.code === "23505") throw new HttpError(409, "Ce prénom est déjà pris dans la partie");
+    if (error.code === "23505") throw new HttpError(409, TAKEN);
     throw error;
   }
   await bump(game.id);

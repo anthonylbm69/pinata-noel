@@ -14,7 +14,13 @@ type Body = {
   count?: number;
   box?: number;
   idx?: number;
+  /** « phase:question » vue par la télé au moment du clic (anti double clic). */
+  at?: string;
 };
+
+// Actions qui font avancer le déroulé : refusées en silence si la télé qui
+// clique n'a pas vu l'état actuel (double clic, deux écrans animateur…).
+const NAV_ACTIONS = new Set(["start", "begin-round", "show-leaderboard", "next", "skip-round"]);
 
 const BOT_NAMES = ["Bot Rudolph", "Bot Lutin", "Bot Flocon", "Bot Sapin", "Bot Bûche", "Bot Grinch", "Bot Étoile", "Bot Cadeau"];
 const BOT_COLORS = ["#e2333f", "#4d80f2", "#2a9e88", "#d99e1a", "#b373f2", "#33bfd9", "#99cc4d", "#f29933"];
@@ -55,10 +61,18 @@ async function advance(game: GameRow, prog: LoadedProgramme) {
   else await openQuestion(game, prog, next);
 }
 
-/** Finale : ordre de passage = classement à l'envers (le dernier commence). */
-async function startFinal(game: GameRow, prog: LoadedProgramme) {
+/** Finale : ordre de passage = classement à l'envers (le dernier commence).
+ *  Moins de 2 joueurs : pas de finale possible, on passe directement aux box
+ *  (sauf si l'animateur l'a demandée explicitement). */
+async function startFinal(game: GameRow, prog: LoadedProgramme, explicit = false) {
+  // Finale rejouée : on annule les bonus de la précédente.
+  const del = await supabaseAdmin().from("adjustments").delete().eq("game_id", game.id).eq("reason", "finale");
+  if (del.error) throw del.error;
   const lb = await computeLeaderboard(game);
-  if (lb.length < 2) throw new HttpError(409, "Il faut au moins 2 joueurs pour la finale");
+  if (lb.length < 2) {
+    if (explicit) throw new HttpError(409, "Il faut au moins 2 joueurs pour la finale");
+    return startBoxes(game);
+  }
   const order = [...lb].reverse().map((p) => p.id);
   const { error } = await supabaseAdmin().rpc("start_final", {
     p_game: game.id,
@@ -94,10 +108,16 @@ export const POST = handle(async (req: Request, ctx: { params: Promise<{ code: s
   const db = supabaseAdmin();
   const prog = getProgramme(game.quiz_id);
 
+  if (NAV_ACTIONS.has(body.action ?? "") && body.at !== undefined && body.at !== `${game.phase}:${game.question_index}`) {
+    return ok({ ok: false, stale: true });
+  }
+
   switch (body.action) {
     // Lance la partie : présentation de la première épreuve.
     case "start": {
       if (game.phase !== "lobby") throw new HttpError(409, "La partie a déjà commencé");
+      const { count } = await db.from("players").select("id", { count: "exact", head: true }).eq("game_id", game.id);
+      if (!count) throw new HttpError(409, "Il faut au moins un joueur");
       await openIntro(game, 0);
       break;
     }
@@ -155,7 +175,7 @@ export const POST = handle(async (req: Request, ctx: { params: Promise<{ code: s
     // Passe directement à la finale ou aux box (plan B).
     case "goto-final": {
       if (!prog.final) throw new HttpError(409, "Pas de finale dans ce programme");
-      await startFinal(game, prog);
+      await startFinal(game, prog, true);
       break;
     }
     case "goto-boxes": {
@@ -299,19 +319,40 @@ export const POST = handle(async (req: Request, ctx: { params: Promise<{ code: s
       break;
     }
 
+    // Libère un prénom : le prochain téléphone qui s'inscrit avec ce prénom
+    // reprend ce joueur et ses points (téléphone changé, historique effacé…).
+    case "release": {
+      if (!body.playerId) throw new HttpError(400, "Joueur manquant");
+      const { error } = await db
+        .from("players")
+        .update({ claimable: true })
+        .eq("game_id", game.id)
+        .eq("id", body.playerId);
+      if (error) throw error;
+      await bump(game.id);
+      break;
+    }
+
     case "kick": {
       if (!body.playerId) throw new HttpError(400, "Joueur manquant");
+      const fp = await db
+        .from("final_players")
+        .select("turn_order")
+        .eq("game_id", game.id)
+        .eq("player_id", body.playerId)
+        .maybeSingle();
       const { error } = await db.from("players").delete().eq("game_id", game.id).eq("id", body.playerId);
       if (error) throw error;
-      // Finale : si c'était son tour, on passe au joueur suivant encore en jeu.
-      if (game.phase === "final" && game.final_turn === body.playerId) {
-        const { data } = await db
-          .from("final_players")
-          .select("player_id")
-          .eq("game_id", game.id)
-          .is("out_at", null)
-          .order("turn_order");
-        await setPhase(game, "final", { final_turn: data?.[0]?.player_id ?? null });
+      // Finale : passe au joueur suivant si c'était son tour, ou termine s'il
+      // ne reste qu'un survivant.
+      if (game.phase === "final" && prog.final && fp.data) {
+        const { error: e2 } = await db.rpc("final_after_kick", {
+          p_game: game.id,
+          p_turn_order: fp.data.turn_order,
+          p_win: prog.final.winPoints,
+          p_second: prog.final.secondPoints,
+        });
+        if (e2) throw e2;
       } else await bump(game.id);
       break;
     }
