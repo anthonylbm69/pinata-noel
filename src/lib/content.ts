@@ -65,6 +65,19 @@ export function getProgramme(id: string): LoadedProgramme {
   return loaded;
 }
 
+/** Mémoire : série d'objets d'une question (0 par défaut). */
+export function setOf(q: FlatQuestion["q"]): number {
+  return "set" in q && typeof q.set === "number" ? q.set : 0;
+}
+
+/** Vrai si la question `index` commence une nouvelle série de la même épreuve mémoire. */
+export function startsNewSet(prog: LoadedProgramme, index: number): boolean {
+  const cur = prog.flat[index];
+  const prev = prog.flat[index - 1];
+  if (!cur || !prev || cur.roundIndex !== prev.roundIndex) return false;
+  return prog.roundList[cur.roundIndex].type === "memoire" && setOf(cur.q) !== setOf(prev.q);
+}
+
 export function isPrice(q: FlatQuestion["q"]): q is PriceQuestion {
   return "price" in q;
 }

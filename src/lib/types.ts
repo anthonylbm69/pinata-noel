@@ -22,6 +22,14 @@ export interface ChoiceQuestion {
   start?: number;
   /** Qui est-ce : photo dans public/ (ex. "/photos/quiestce/01.jpg") */
   image?: string;
+  /** Mémoire : numéro de la série d'objets (0, 1…) sur laquelle porte la question */
+  set?: number;
+}
+
+/** Mémoire : une série d'objets à mémoriser, montrée avant ses questions. */
+export interface MemorySet {
+  title: string;
+  objects: { emoji: string; label: string }[];
 }
 
 /** Juste prix : les joueurs tapent un prix en euros. */
@@ -41,8 +49,8 @@ export interface Round {
   /** phrase d'explication affichée sur l'écran de présentation */
   rules: string;
   timeLimitMs: number;
-  /** Mémoire : objets à mémoriser (emoji + nom) et durée d'affichage */
-  objects?: { emoji: string; label: string }[];
+  /** Mémoire : séries d'objets à mémoriser (emoji + nom) et durée d'affichage de chaque série */
+  sets?: MemorySet[];
   displayMs?: number;
   questions: (ChoiceQuestion | PriceQuestion)[];
 }
@@ -101,7 +109,11 @@ export interface PublicRound {
   title: string;
   rules: string;
   questionCount: number;
-  /** Mémoire, phase intro uniquement */
+  /** Mémoire : série en cours (0…) et nombre de séries */
+  setIndex?: number;
+  setCount?: number;
+  setTitle?: string;
+  /** Mémoire, phase intro uniquement (télé) : objets de la série en cours */
   objects?: { emoji: string; label: string }[];
   displayMs?: number;
 }
@@ -156,6 +168,8 @@ export interface GameState {
     hasBoxes: boolean;
     /** vrai si la question en cours est la dernière de son épreuve */
     lastInRound: boolean;
+    /** mémoire : la question suivante ouvre une nouvelle série d'objets */
+    nextIsNewSet: boolean;
     /** vrai si c'est la toute dernière question */
     lastQuestion: boolean;
   };

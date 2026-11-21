@@ -2,7 +2,7 @@
 // Toutes les actions exigent le jeton animateur.
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { assertHost, bump, computeLeaderboard, getGame, pickBox, type GameRow } from "@/lib/game-server";
-import { PRICE_SCALE, getProgramme, isPrice, type LoadedProgramme } from "@/lib/content";
+import { PRICE_SCALE, getProgramme, isPrice, startsNewSet, type LoadedProgramme } from "@/lib/content";
 import { handle, ok, readJson, HttpError } from "@/lib/http";
 
 type Body = {
@@ -20,7 +20,7 @@ type Body = {
 
 // Actions qui font avancer le déroulé : refusées en silence si la télé qui
 // clique n'a pas vu l'état actuel (double clic, deux écrans animateur…).
-const NAV_ACTIONS = new Set(["start", "begin-round", "show-leaderboard", "next", "skip-round"]);
+const NAV_ACTIONS = new Set(["start", "begin-round", "show-objects", "show-leaderboard", "next", "skip-round"]);
 
 const BOT_NAMES = ["Bot Rudolph", "Bot Lutin", "Bot Flocon", "Bot Sapin", "Bot Bûche", "Bot Grinch", "Bot Étoile", "Bot Cadeau"];
 const BOT_COLORS = ["#e2333f", "#4d80f2", "#2a9e88", "#d99e1a", "#b373f2", "#33bfd9", "#99cc4d", "#f29933"];
@@ -44,7 +44,19 @@ async function openQuestion(game: GameRow, prog: LoadedProgramme, index: number)
   if (error) throw error;
 }
 
-async function openIntro(game: GameRow, index: number) {
+async function openIntro(game: GameRow, index: number, prog?: LoadedProgramme) {
+  // Mémoire : d'abord un écran d'annonce, sans chrono ; l'animateur lance
+  // ensuite l'affichage des objets (« show-objects »).
+  const flat = prog?.flat[index];
+  if (flat && prog!.roundList[flat.roundIndex].type === "memoire") {
+    await setPhase(game, "intro", { question_index: index, question_opened_at: null });
+    return;
+  }
+  await startIntroClock(game, index);
+}
+
+/** Démarre le chrono de l'intro sur l'horloge de la base (affichage des objets). */
+async function startIntroClock(game: GameRow, index: number) {
   const { error } = await supabaseAdmin().rpc("open_intro", { p_game: game.id, p_index: index });
   if (error) throw error;
 }
@@ -59,8 +71,10 @@ async function afterRounds(game: GameRow, prog: LoadedProgramme) {
 async function advance(game: GameRow, prog: LoadedProgramme) {
   const next = game.question_index + 1;
   if (next >= prog.flat.length) return afterRounds(game, prog);
-  if (prog.flat[next].roundIndex !== prog.flat[game.question_index].roundIndex) await openIntro(game, next);
-  else await openQuestion(game, prog, next);
+  // Nouvelle épreuve, ou nouvelle série d'objets de la mémoire : écran de présentation.
+  if (prog.flat[next].roundIndex !== prog.flat[game.question_index].roundIndex || startsNewSet(prog, next)) {
+    await openIntro(game, next, prog);
+  } else await openQuestion(game, prog, next);
 }
 
 /** Finale : ordre de passage = classement à l'envers (le dernier commence).
@@ -125,7 +139,17 @@ export const POST = handle(async (req: Request, ctx: { params: Promise<{ code: s
       if (game.phase !== "lobby") throw new HttpError(409, "La partie a déjà commencé");
       const { count } = await db.from("players").select("id", { count: "exact", head: true }).eq("game_id", game.id);
       if (!count) throw new HttpError(409, "Il faut au moins un joueur");
-      await openIntro(game, 0);
+      await openIntro(game, 0, prog);
+      break;
+    }
+
+    // Mémoire : l'animateur lance l'affichage des objets (20 s).
+    case "show-objects": {
+      const flat = prog.flat[game.question_index];
+      if (game.phase !== "intro" || !flat || prog.roundList[flat.roundIndex].type !== "memoire") {
+        throw new HttpError(409, "Pas d'objets à montrer");
+      }
+      await startIntroClock(game, game.question_index);
       break;
     }
 
@@ -173,7 +197,7 @@ export const POST = handle(async (req: Request, ctx: { params: Promise<{ code: s
       }
       const nextRound = prog.firstOfRound[flat.roundIndex + 1];
       if (nextRound === undefined) await afterRounds(game, prog);
-      else await openIntro(game, nextRound);
+      else await openIntro(game, nextRound, prog);
       break;
     }
 

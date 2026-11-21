@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:push": "node --env-file=.env.local scripts/db-push.mjs",
+    "db:functions": "node --env-file=.env.local scripts/db-functions.mjs",
     "check:content": "node scripts/check-content.mjs"
   },
   "dependencies": {

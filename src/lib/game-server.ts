@@ -1,6 +1,6 @@
 // Logique de partie côté serveur : chargement, authentification, état.
 import { supabaseAdmin } from "./supabase-admin";
-import { getProgramme, isPrice } from "./content";
+import { getProgramme, isPrice, setOf, startsNewSet } from "./content";
 import { HttpError } from "./http";
 import type {
   BoxesState,
@@ -237,11 +237,20 @@ export async function buildState(
       title: r.title,
       rules: r.rules,
       questionCount: r.questions.length,
-      // Les objets à mémoriser ne sont montrés que pendant l'écran de présentation.
-      // (et seulement à la télé : un téléphone ne doit pas pouvoir les relire).
-      ...(game.phase === "intro" && r.objects ? { displayMs: r.displayMs } : {}),
-      ...(game.phase === "intro" && r.objects && isHost ? { objects: r.objects } : {}),
     };
+    // Mémoire : la série d'objets de la question en cours. Les objets ne sont
+    // envoyés qu'à la télé, et seulement pendant l'affichage (après « Lancer ») :
+    // un téléphone ne doit pas pouvoir les relire.
+    const set = r.sets?.[setOf(flat.q)];
+    if (set) {
+      round.setIndex = setOf(flat.q);
+      round.setCount = r.sets!.length;
+      round.setTitle = set.title;
+      if (game.phase === "intro") {
+        round.displayMs = r.displayMs;
+        if (isHost && game.question_opened_at) round.objects = set.objects;
+      }
+    }
   }
 
   // ---- Question en cours (sans la bonne réponse) ----
@@ -360,6 +369,7 @@ export async function buildState(
   }
 
   const lastInRound = !!flat && flat.indexInRound === prog.roundList[flat.roundIndex].questions.length - 1;
+  const nextIsNewSet = !!flat && startsNewSet(prog, qi + 1);
 
   return {
     game: {
@@ -377,6 +387,7 @@ export async function buildState(
       hasFinal: !!prog.final,
       hasBoxes: game.box_count > 0,
       lastInRound,
+      nextIsNewSet,
       lastQuestion: qi >= prog.flat.length - 1,
     },
     serverNow: Number(nowRes.data),

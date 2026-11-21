@@ -24,17 +24,20 @@ Le son est joué **par la télé uniquement**. Si la télé affiche « 🔊 Acti
 Le blind test adultes sera branché avec le mode adultes.
 
 ## 👀 Mémoire — `memoire.json`
-Prêt à jouer : 10 objets (emoji + nom) affichés 20 s, puis 7 questions. Tu peux changer les objets
-(garde-en 10) et les questions. « Tout en haut à gauche » = le 1er objet de la liste.
+2 séries (`sets`) de 10 objets (emoji + nom), chacune avec sa question (`"set": 0` ou `1`) :
+1. Les objets (guitare, pizza…) ; 2. Les persos d'anime (Naruto, Luffy, Goku…).
+Déroulé pour chaque série : écran d'annonce → l'animateur clique **Lancer** → 20 s pour mémoriser
+(`displayMs`) → tout disparaît → **À la question**. Tu peux ajouter une série ou des questions par série.
 
 ## 💶 Juste prix — `justeprix.json`
 Prix en **euros entiers**. ⚠️ **Vérifie les prix** avant le jour J, ce sont des estimations.
 Tu peux ajouter une photo avec `"image": "/photos/justeprix/xxx.jpg"` (sinon l'emoji est affiché).
 Points : le plus proche sans dépasser 1000, puis 700, 500, 350, 250, 150, 100 ; dépassé = 0.
+Même prix proposé = mêmes points (deux 1ers ex aequo ont 1000 chacun, le suivant 700).
 
 ## 🕵️ Qui est-ce ? — `quiestce.json`
-1. Mets les photos (bébés, vieilles photos…) dans `public/photos/quiestce/`, nommées `01.jpg`, `02.jpg`…
-2. Remplace les prénoms dans `choices` (ceux écrits sont des exemples).
+1. Mets les photos dans `public/photos/quiestce/`, nommées avec le prénom (comme le bébé mystère).
+2. Les réponses seront faites à partir des noms de fichiers (ceux écrits dans le JSON sont des exemples).
 La photo apparaît très floue et devient nette à la fin du chrono. Elle n'est affichée que sur la télé.
 
 ## 🍷 Mode adultes — `programme-adultes.json`

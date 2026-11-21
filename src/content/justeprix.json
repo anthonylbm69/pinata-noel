@@ -2,7 +2,7 @@
   "id": "justeprix",
   "type": "justeprix",
   "title": "Le juste prix",
-  "rules": "Tape ton prix en euros. Le plus proche SANS DÉPASSER gagne ! En cas d'égalité, le plus rapide l'emporte.",
+  "rules": "Tape ton prix en euros. Le plus proche SANS DÉPASSER gagne ! Même prix = mêmes points.",
   "timeLimitMs": 30000,
   "questions": [
     { "text": "Combien coûte un pot de Nutella de 1 kg ?", "emoji": "🍫", "price": 9 },

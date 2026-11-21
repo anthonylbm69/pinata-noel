@@ -9,10 +9,10 @@ Lire aussi `AGENTS.md` (règles Next.js 16 : lire `node_modules/next/dist/docs/`
 ## Règles du jeu (décidées avec Anthony)
 
 ### Côté enfants — 7 joueurs (2 filles 13–15 ans, 5 garçons 10–17 ans)
-- Épreuves : **quiz sur tonton** → blind test → mémoire 10 objets → juste prix → qui est-ce → **finale**.
+- Épreuves : **quiz sur tonton** → blind test → mémoire (2 séries) → juste prix → qui est-ce → **finale**.
 - Points façon Kahoot à chaque question : juste = `round(1000 × (1 − (t / T) ÷ 2))`, faux = 0.
   Le temps `t` est mesuré par **l'horloge de la base** (jamais celle du téléphone).
-- Juste prix : le plus proche **sans dépasser** gagne, le temps départage les égalités.
+- Juste prix : le plus proche **sans dépasser** gagne ; **même prix = mêmes points** (pas de départage au temps).
 - **Finale « bouton de la mort »** : 20 boutons dont **6 piégés**, tour par tour. Les bombes sont tirées côté
   serveur et **ne sont jamais envoyées aux clients**. (Règles exactes de points à confirmer avec Anthony.)
 - **Fin** : le classement cumulé donne l'ordre de choix. L'écran affiche **7 box numérotées (1 à 7) sans aucun
@@ -54,7 +54,9 @@ Tél   /play/[code] ──┘   (clé service_role)    └── Realtime : UPDA
   (épreuve suivante) … → final → boxes → end`.
 - **Programme** (`src/content/programme-enfants.json`) = liste d'épreuves + finale + nombre de box.
   `getProgramme` (`src/lib/content.ts`) aplatit toutes les questions : `question_index` est un index **global**.
-  Types d'épreuve : `quiz`, `blindtest` (audio joué par la télé), `memoire` (objets affichés pendant l'intro),
+  Types d'épreuve : `quiz`, `blindtest` (audio joué par la télé), `memoire` (séries d'objets `sets`, chacune
+  annoncée en intro sans chrono ; l'action `show-objects` lance les 20 s d'affichage ; les objets ne sont
+  envoyés qu'à la télé et après le lancement),
   `quiestce` (photo floue sur la télé), `justeprix` (saisie d'un prix, `answers.choice` = prix en euros,
   points distribués à la fermeture par `close_price_question`).
 
@@ -103,6 +105,7 @@ bombe, élimination et bonus sous verrou), `server_now_ms`, `bump_game`. Classem
    `SUPABASE_SERVICE_ROLE_KEY`), plus `DATABASE_URL` (Connect → Session pooler).
 3. `npm run db:push` applique `supabase/schema.sql` (refuse s'il y a déjà des parties ; `-- --force` pour passer
    outre — **jamais le soir du réveillon**, ça efface tout). Claude peut le lancer seul.
+   Pour ne changer **que les fonctions SQL** (sans toucher aux données) : `npm run db:functions`.
 4. `npm install && npm run dev` → http://localhost:3000. Pour tester avec des téléphones sur le même Wi-Fi :
    `npm run dev -- -H 0.0.0.0` puis ouvrir l'IP de l'ordinateur.
 

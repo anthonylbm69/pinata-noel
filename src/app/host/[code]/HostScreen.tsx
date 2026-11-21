@@ -22,7 +22,7 @@ import { BoxesView, FinalView } from "./HostFinal";
 
 export type Act = (a: string, e?: Record<string, unknown>) => Promise<void>;
 
-const NAV_ACTIONS = new Set(["start", "begin-round", "show-leaderboard", "next", "skip-round"]);
+const NAV_ACTIONS = new Set(["start", "begin-round", "show-objects", "show-leaderboard", "next", "skip-round"]);
 
 export default function HostScreen({ code }: { code: string }) {
   const [token, setToken] = useState<string | null | undefined>(undefined);
@@ -366,12 +366,12 @@ const ROUND_ICONS: Record<string, string> = {
   quiestce: "🕵️",
 };
 
-// Présentation d'une épreuve. Pour la mémoire : les 10 objets, puis ils disparaissent.
+// Présentation d'une épreuve.
+// Mémoire, pour chaque série : annonce → « Lancer » → objets affichés 20 s → ils
+// disparaissent → « À la question » (une ou plusieurs questions sur cette série).
 function IntroView({ state, remaining, act }: { state: GameState; remaining: number | null; act: Act }) {
   const r = state.round!;
-  const objects = r.objects;
-  const showing = !!objects && remaining !== 0;
-  const secs = Math.ceil((remaining ?? state.game.timeLimitMs) / 1000);
+  if (r.type === "memoire") return <MemoryIntro state={state} remaining={remaining} act={act} />;
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-8 p-12 text-center">
       <Kicker>
@@ -380,42 +380,67 @@ function IntroView({ state, remaining, act }: { state: GameState; remaining: num
       <h1 className="animate-pop text-8xl font-bold">
         {ROUND_ICONS[r.type]} {r.title}
       </h1>
-      {objects ? (
-        showing ? (
-          <>
-            <div className="grid grid-cols-5 gap-5">
-              {objects.map((o, i) => (
-                <div
-                  key={i}
-                  className="animate-pop flex w-40 flex-col items-center gap-2 rounded-3xl bg-white/8 p-5"
-                  style={{ animationDelay: `${i * 80}ms` }}
-                >
-                  <span className="text-7xl">{o.emoji}</span>
-                  <span className="text-xl font-semibold">{o.label}</span>
-                </div>
-              ))}
-            </div>
-            <p className={`text-6xl font-bold ${secs <= 5 ? "text-xred" : "text-xgold"}`}>{secs}</p>
-          </>
-        ) : (
-          <>
-            <p className="text-4xl font-semibold">Les objets ont disparu ! 🙈</p>
-            <Button onClick={() => void act("begin-round")}>Aux questions →</Button>
-          </>
-        )
+      <p className="max-w-4xl text-3xl leading-snug">{r.rules}</p>
+      <p className="text-xgrey text-2xl">
+        {r.questionCount} question{r.questionCount > 1 ? "s" : ""}
+      </p>
+      <Button onClick={() => void act("begin-round")}>C&apos;est parti !</Button>
+    </main>
+  );
+}
+
+function MemoryIntro({ state, remaining, act }: { state: GameState; remaining: number | null; act: Act }) {
+  const r = state.round!;
+  const sets = r.setCount ?? 1;
+  const set = (r.setIndex ?? 0) + 1;
+  const started = !!state.game.openedAt;
+  const showing = started && !!r.objects && remaining !== 0;
+  const secs = Math.ceil((remaining ?? state.game.timeLimitMs) / 1000);
+  return (
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-8 p-12 text-center">
+      <Kicker>
+        Épreuve {r.index + 1}/{r.total}
+        {sets > 1 ? ` · série ${set}/${sets}` : ""}
+      </Kicker>
+      <h1 className="animate-pop text-8xl font-bold">
+        {ROUND_ICONS.memoire} {set === 1 ? r.title : r.setTitle}
+      </h1>
+      {!started ? (
+        // Annonce : rien n'est montré tant que l'animateur n'a pas lancé.
+        <>
+          {set === 1 ? (
+            <p className="max-w-4xl text-3xl leading-snug">{r.rules}</p>
+          ) : (
+            <p className="max-w-4xl text-3xl leading-snug">Nouvelle série ! Prépare-toi à mémoriser…</p>
+          )}
+          {r.setTitle && set === 1 && sets > 1 && <p className="text-xgold text-3xl font-semibold">Série 1 : {r.setTitle}</p>}
+          <p className="text-xgrey text-2xl">{Math.round((r.displayMs ?? 20000) / 1000)} secondes pour tout retenir</p>
+          <Button onClick={() => void act("show-objects")}>Lancer 👀</Button>
+        </>
+      ) : showing ? (
+        <>
+          <div className="grid grid-cols-5 gap-5">
+            {r.objects!.map((o, i) => (
+              <div
+                key={i}
+                className="animate-pop flex w-40 flex-col items-center gap-2 rounded-3xl bg-white/8 p-5"
+                style={{ animationDelay: `${i * 80}ms` }}
+              >
+                <span className="text-7xl">{o.emoji}</span>
+                <span className="text-xl font-semibold">{o.label}</span>
+              </div>
+            ))}
+          </div>
+          <p className={`text-6xl font-bold ${secs <= 5 ? "text-xred" : "text-xgold"}`}>{secs}</p>
+          <button onClick={() => void act("begin-round")} className="text-xgrey text-lg underline">
+            passer
+          </button>
+        </>
       ) : (
         <>
-          <p className="max-w-4xl text-3xl leading-snug">{r.rules}</p>
-          <p className="text-xgrey text-2xl">
-            {r.questionCount} question{r.questionCount > 1 ? "s" : ""}
-          </p>
-          <Button onClick={() => void act("begin-round")}>C&apos;est parti !</Button>
+          <p className="text-4xl font-semibold">Tout a disparu ! 🙈</p>
+          <Button onClick={() => void act("begin-round")}>À la question →</Button>
         </>
-      )}
-      {objects && showing && (
-        <button onClick={() => void act("begin-round")} className="text-xgrey text-lg underline">
-          passer
-        </button>
       )}
     </main>
   );
@@ -515,6 +540,7 @@ function nextLabel(state: GameState) {
     return state.game.hasFinal ? "La finale 💣 →" : state.game.hasBoxes ? "Les box 🎁 →" : "Les gagnants 🏆 →";
   }
   if (state.game.lastInRound) return "Épreuve suivante →";
+  if (state.game.nextIsNewSet) return "Série suivante →";
   return "Question suivante →";
 }
 

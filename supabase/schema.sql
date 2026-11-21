@@ -255,9 +255,11 @@ begin
    where id = p_game and phase = 'question' and question_index = p_index;
   if not found then return false; end if;
 
+  -- Même prix proposé = même rang = mêmes points (dense_rank : deux 1ers à
+  -- 1000, le suivant à 700). Le temps ne départage plus.
   with ranked as (
     select id,
-           row_number() over (order by (p_price - choice) asc, elapsed_ms asc) as rk
+           dense_rank() over (order by (p_price - choice) asc) as rk
       from answers
      where game_id = p_game and question_index = p_index and choice <= p_price
   )

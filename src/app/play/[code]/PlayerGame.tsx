@@ -123,9 +123,10 @@ export default function PlayerGame({ code }: { code: string }) {
         <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
           <p className="text-xgold font-semibold">
             ÉPREUVE {r.index + 1}/{r.total}
+            {r.setCount && r.setCount > 1 ? ` · SÉRIE ${(r.setIndex ?? 0) + 1}/${r.setCount}` : ""}
           </p>
           <span className="animate-pop text-8xl">{ROUND_ICONS[r.type]}</span>
-          <h1 className="text-4xl font-bold">{r.title}</h1>
+          <h1 className="text-4xl font-bold">{r.setIndex ? r.setTitle : r.title}</h1>
           <p className="text-lg">{r.type === "memoire" ? "Regarde bien la télé, mémorise tout ! 👀" : r.rules}</p>
         </div>
       </Shell>
