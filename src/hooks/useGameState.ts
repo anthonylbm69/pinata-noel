@@ -1,0 +1,127 @@
+"use client";
+// Synchronise l'état de la partie :
+//  1. Realtime Supabase sur la ligne "games" → rechargement immédiat ;
+//  2. filet de sécurité : rechargement toutes les 4 s, au retour au premier
+//     plan (téléphone déverrouillé) et au retour du réseau.
+import { useCallback, useEffect, useRef, useState } from "react";
+import { supabaseBrowser } from "@/lib/supabase-browser";
+import type { GameState } from "@/lib/types";
+
+export type Auth =
+  | { role: "host"; token: string }
+  | { role: "player"; playerId: string; token: string };
+
+export function useGameState(code: string, auth: Auth | null) {
+  const [state, setState] = useState<GameState | null>(null);
+  const [error, setError] = useState<{ status: number; message: string } | null>(null);
+  const [live, setLive] = useState(false);
+  const offsetRef = useRef(0); // serverNow - Date.now()
+  const inflight = useRef(false);
+  const queued = useRef(false);
+
+  const authKey = auth ? JSON.stringify(auth) : "";
+
+  const refresh = useCallback(async () => {
+    if (!auth) return;
+    if (inflight.current) {
+      queued.current = true;
+      return;
+    }
+    inflight.current = true;
+    try {
+      const params = new URLSearchParams(
+        auth.role === "host" ? { host: auth.token } : { player: auth.playerId, token: auth.token },
+      );
+      const t0 = Date.now();
+      const res = await fetch(`/api/games/${code}/state?${params}`, { cache: "no-store" });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError({ status: res.status, message: body.error ?? "Erreur" });
+        return;
+      }
+      const t1 = Date.now();
+      offsetRef.current = body.serverNow - (t0 + t1) / 2;
+      setError(null);
+      setState((prev) => (prev && prev.game.version > body.game.version ? prev : body));
+    } catch {
+      setError({ status: 0, message: "Connexion perdue, on réessaie…" });
+    } finally {
+      inflight.current = false;
+      if (queued.current) {
+        queued.current = false;
+        void refresh();
+      }
+    }
+    // authKey résume auth
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, authKey]);
+
+  useEffect(() => {
+    if (!auth) return;
+    void refresh();
+
+    const sb = supabaseBrowser();
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const channel = sb
+      ?.channel(`game-${code}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "games", filter: `code=eq.${code}` },
+        () => {
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(() => void refresh(), 80);
+        },
+      )
+      .subscribe((status) => setLive(status === "SUBSCRIBED"));
+
+    const poll = setInterval(() => void refresh(), 4000);
+    const onWake = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("online", onWake);
+    window.addEventListener("focus", onWake);
+
+    return () => {
+      clearInterval(poll);
+      if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("online", onWake);
+      window.removeEventListener("focus", onWake);
+      if (channel) void sb?.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, authKey, refresh]);
+
+  /** Heure actuelle du serveur (estimée), pour le chrono. */
+  const serverNow = useCallback(() => Date.now() + offsetRef.current, []);
+
+  return { state, error, live, refresh, serverNow };
+}
+
+/** Millisecondes restantes sur la question en cours, mis à jour ~10 fois/s. */
+export function useRemaining(state: GameState | null, serverNow: () => number) {
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const openedAt = state?.game.phase === "question" ? state.game.openedAt : null;
+  const limit = state?.game.timeLimitMs ?? 0;
+  useEffect(() => {
+    if (!openedAt) return;
+    const end = new Date(openedAt).getTime() + limit;
+    const tick = () => setRemaining(Math.max(0, end - serverNow()));
+    tick();
+    const id = setInterval(tick, 100);
+    return () => clearInterval(id);
+  }, [openedAt, limit, serverNow]);
+  return openedAt ? remaining : null;
+}
+
+export async function postJson<T = unknown>(url: string, body: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error ?? "Erreur");
+  return data as T;
+}
