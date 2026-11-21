@@ -7,33 +7,135 @@
   "questions": [
     {
       "text": "Qui est ce bébé ?",
-      "image": "/photos/bebe/01.jpg",
-      "choices": ["Tonton", "Maman", "Papi", "Tata"],
-      "correct": 0
-    },
-    {
-      "text": "Qui est ce bébé ?",
-      "image": "/photos/bebe/02.jpg",
-      "choices": ["Papa", "Mamie", "Tonton", "Tata"],
-      "correct": 1
-    },
-    {
-      "text": "Qui est ce bébé ?",
-      "image": "/photos/bebe/03.jpg",
-      "choices": ["Maman", "Papa", "Papi", "Tonton"],
+      "image": "/photos/bebe/leo.jpeg",
+      "choices": [
+        "Liam",
+        "Milan",
+        "Léo",
+        "Ayden"
+      ],
       "correct": 2
     },
     {
       "text": "Qui est ce bébé ?",
-      "image": "/photos/bebe/04.jpg",
-      "choices": ["Tata", "Tonton", "Maman", "Mamie"],
+      "image": "/photos/bebe/lana.jpeg",
+      "choices": [
+        "Lana",
+        "Mily",
+        "Milan",
+        "Liam"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Qui est ce bébé ?",
+      "image": "/photos/bebe/cedric (2).jpeg",
+      "choices": [
+        "Kévin",
+        "Benjamin",
+        "Anto",
+        "Cédric"
+      ],
       "correct": 3
     },
     {
       "text": "Qui est ce bébé ?",
-      "image": "/photos/bebe/05.jpg",
-      "choices": ["Papi", "Tata", "Papa", "Maman"],
+      "image": "/photos/bebe/ayden.jpeg",
+      "choices": [
+        "Logan",
+        "Ayden",
+        "Léo",
+        "Liam"
+      ],
       "correct": 1
+    },
+    {
+      "text": "Qui sont ces bébés ?",
+      "image": "/photos/bebe/mathys et logan.jpeg",
+      "choices": [
+        "Léo et Liam",
+        "Mathys et Logan",
+        "Milan et Ayden",
+        "Kévin et Cédric"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Qui est ce bébé ?",
+      "image": "/photos/bebe/anto.jpeg",
+      "choices": [
+        "Benjamin",
+        "Cédric",
+        "Kévin",
+        "Anto"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Qui est ce bébé ?",
+      "image": "/photos/bebe/mily.jpeg",
+      "choices": [
+        "Mily",
+        "Lana",
+        "Milan",
+        "Léo"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Qui est ce bébé ?",
+      "image": "/photos/bebe/liam.jpeg",
+      "choices": [
+        "Léo",
+        "Logan",
+        "Liam",
+        "Milan"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Qui est ce bébé ?",
+      "image": "/photos/bebe/kevin.jpeg",
+      "choices": [
+        "Anto",
+        "Cédric",
+        "Benjamin",
+        "Kévin"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Qui est ce bébé ?",
+      "image": "/photos/bebe/milan.jpeg",
+      "choices": [
+        "Mily",
+        "Milan",
+        "Ayden",
+        "Liam"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Qui est ce bébé ?",
+      "image": "/photos/bebe/benjamin.jpeg",
+      "choices": [
+        "Benjamin",
+        "Kévin",
+        "Anto",
+        "Cédric"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Qui est ce bébé ?",
+      "image": "/photos/bebe/logan.jpeg",
+      "choices": [
+        "Ayden",
+        "Liam",
+        "Logan",
+        "Léo"
+      ],
+      "correct": 2
     }
   ]
 }

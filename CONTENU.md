@@ -43,7 +43,7 @@ gagnante (femmes) et le gagnant (hommes).
 - **Quiz de Noël** (`quiz-noel.json`) : 8 questions de culture de Noël, jouables telles quelles. Remplace-les par
   des questions sur la famille si tu veux.
 - **Bébé mystère** (`bebe-mystere.json`) : photos de bébé des adultes dans `public/photos/bebe/`, nommées
-  `01.jpg`, `02.jpg`… et les prénoms dans `choices` (ceux écrits sont des exemples).
+  rempli : 12 photos, nommées par le prénom du bébé (= la bonne réponse).
 
 ## 💣 Finale et 🎁 box — `programme-enfants.json`
 - `rounds` : l'ordre des épreuves (tu peux en retirer une).

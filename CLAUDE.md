@@ -119,8 +119,8 @@ Vercel : importer le dépôt, ajouter les 3 variables d'environnement, déployer
 - [x] Finale 20 boutons / 6 bombes : dernier survivant +3000, dernier éliminé +1500, le dernier du classement
       commence (règles validées par Anthony).
 - [x] Écran des box (numéros 1–7 uniquement, l'animateur peut choisir à la place d'un joueur).
-- [x] Mode adultes (camp F / H à l'inscription, 2 classements, gagnante + gagnant). Contenu à fournir : photos
-      du bébé mystère (`public/photos/bebe/`), questions du quiz de Noël à personnaliser si voulu.
+- [x] Mode adultes (camp F / H à l'inscription, 2 classements, gagnante + gagnant). Bébé mystère rempli (12 photos).
+      Reste : questions du quiz de Noël à personnaliser si voulu.
 - [ ] Admin : liste/suppression des parties de test, saut de phase.
 - [ ] Mise en ligne + répétition générale avec 5–6 vrais téléphones (Wi-Fi **et** 4G, tests de casse).
 
