@@ -101,6 +101,12 @@ end $$;
 -- Fonctions (appelées par le serveur Next.js)
 -- ---------------------------------------------------------------------
 
+-- Heure de la base en millisecondes : sert à caler le chrono des écrans.
+create or replace function server_now_ms() returns bigint
+language sql stable as $$
+  select (extract(epoch from clock_timestamp()) * 1000)::bigint
+$$;
+
 -- Signale un changement aux clients.
 create or replace function bump_game(p_game uuid)
 returns void language sql as $$
@@ -174,3 +180,11 @@ begin
   perform bump_game(p_game);
   return query select true, 'ok', v_elapsed, v_points;
 end $$;
+
+-- Ces fonctions ne sont appelées que par le serveur (clé service_role) :
+-- les navigateurs (clé publique) n'ont pas le droit de les lancer.
+revoke execute on all functions in schema public from public, anon, authenticated;
+grant execute on all functions in schema public to service_role;
+
+-- Demande à l'API Supabase (PostgREST) de relire les tables tout de suite.
+notify pgrst, 'reload schema';

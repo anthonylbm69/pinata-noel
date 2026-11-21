@@ -101,18 +101,22 @@ export function useGameState(code: string, auth: Auth | null) {
 
 /** Millisecondes restantes sur la question en cours, mis à jour ~10 fois/s. */
 export function useRemaining(state: GameState | null, serverNow: () => number) {
-  const [remaining, setRemaining] = useState<number | null>(null);
+  // On mémorise à quelle question appartient la valeur : sinon, au passage à la
+  // question suivante, le « 0 » de la question précédente (finie au chrono)
+  // ressortait une fraction de seconde et la télé refermait la nouvelle question.
+  const [tick, setTick] = useState<{ key: string; ms: number } | null>(null);
   const openedAt = state?.game.phase === "question" ? state.game.openedAt : null;
   const limit = state?.game.timeLimitMs ?? 0;
+  const key = openedAt ? `${openedAt}|${limit}` : null;
   useEffect(() => {
-    if (!openedAt) return;
+    if (!openedAt || !key) return;
     const end = new Date(openedAt).getTime() + limit;
-    const tick = () => setRemaining(Math.max(0, end - serverNow()));
-    tick();
-    const id = setInterval(tick, 100);
+    const update = () => setTick({ key, ms: Math.max(0, end - serverNow()) });
+    update();
+    const id = setInterval(update, 100);
     return () => clearInterval(id);
-  }, [openedAt, limit, serverNow]);
-  return openedAt ? remaining : null;
+  }, [openedAt, limit, key, serverNow]);
+  return key && tick?.key === key ? tick.ms : null;
 }
 
 export async function postJson<T = unknown>(url: string, body: unknown): Promise<T> {

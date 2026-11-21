@@ -103,8 +103,8 @@ export default function HostPanel({
               {state.leaderboard.map((p) => (
                 <div key={p.id} className="flex items-center gap-2">
                   <Avatar color={p.color} size={24} />
-                  <span className="flex-1 truncate font-semibold">{p.name}</span>
-                  <span className="text-xgold w-20 text-right text-sm">{formatPoints(p.total)}</span>
+                  <span className="min-w-0 flex-1 truncate font-semibold">{p.name}</span>
+                  <span className="text-xgold shrink-0 text-right text-sm">{formatPoints(p.total)}</span>
                   <Tiny onClick={() => void act("adjust", { playerId: p.id, points: -500 })}>−500</Tiny>
                   <Tiny onClick={() => void act("adjust", { playerId: p.id, points: 500 })}>+500</Tiny>
                   <Tiny onClick={() => void act("adjust", { playerId: p.id, points: 1000 })}>+1000</Tiny>

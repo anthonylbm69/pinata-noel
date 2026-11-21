@@ -72,9 +72,13 @@ en double), `bump_game`. Classement = somme `answers.points` + `adjustments.poin
 
 ## Lancer en local
 
-1. Créer un projet Supabase, exécuter `supabase/schema.sql` dans le SQL Editor.
-2. `cp .env.example .env.local` et remplir les 3 variables (Project Settings → API).
-3. `npm install && npm run dev` → http://localhost:3000. Pour tester avec des téléphones sur le même Wi-Fi :
+1. Créer un projet Supabase.
+2. `cp .env.example .env.local` et remplir les variables (Project Settings → API Keys ; la clé publique peut
+   s'appeler `NEXT_PUBLIC_SUPABASE_ANON_KEY` ou `..._PUBLISHABLE_KEY`, la secrète `sb_secret_…` va dans
+   `SUPABASE_SERVICE_ROLE_KEY`), plus `DATABASE_URL` (Connect → Session pooler).
+3. `npm run db:push` applique `supabase/schema.sql` (refuse s'il y a déjà des parties ; `-- --force` pour passer
+   outre — **jamais le soir du réveillon**, ça efface tout). Claude peut le lancer seul.
+4. `npm install && npm run dev` → http://localhost:3000. Pour tester avec des téléphones sur le même Wi-Fi :
    `npm run dev -- -H 0.0.0.0` puis ouvrir l'IP de l'ordinateur.
 
 Vercel : importer le dépôt, ajouter les 3 variables d'environnement, déployer.
@@ -90,6 +94,13 @@ Vercel : importer le dépôt, ajouter les 3 variables d'environnement, déployer
 - [ ] Mode adultes (genre à l'inscription, 2 classements, épreuves adultes).
 - [ ] Admin : liste/suppression des parties de test, saut de phase.
 - [ ] Mise en ligne + répétition générale avec 5–6 vrais téléphones (Wi-Fi **et** 4G, tests de casse).
+
+## Pièges déjà rencontrés (test du 21/11)
+- Le chrono des écrans se cale sur l'heure **de la base** (`server_now_ms()`), pas sur `Date.now()` du serveur
+  Next : l'horloge du PC avait 14,6 s d'écart avec Supabase.
+- `useRemaining` ne doit jamais renvoyer la valeur de la question précédente (sinon la télé refermait la
+  question suivante au bout de 1,2 s).
+- Pendant une question, les points de cette question ne comptent pas dans les totaux envoyés (spoiler).
 
 ## Risques à garder en tête
 - Téléphone verrouillé / onglet en arrière-plan → reconnexion par jeton + rechargement de l'état (fait).

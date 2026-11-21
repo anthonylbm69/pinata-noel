@@ -84,7 +84,7 @@ export default function PlayerGame({ code }: { code: string }) {
           <h1 className="text-3xl font-bold">Tu es dans la partie !</h1>
           <p className="text-xgrey text-lg">Regarde la télé, ça va commencer…</p>
         </div>
-        <p className="text-xgrey text-center">{state.players.length} joueurs connectés</p>
+        <p className="text-xgrey text-center">{state.players.length} joueur{state.players.length > 1 ? "s" : ""} connecté{state.players.length > 1 ? "s" : ""}</p>
       </Shell>
     );
   }

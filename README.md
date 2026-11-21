@@ -29,8 +29,9 @@ le classement final donne l'ordre de choix des cadeaux.
 
 ## En local
 ```bash
-cp .env.example .env.local   # puis remplis les 3 variables
+cp .env.example .env.local   # puis remplis les variables (+ DATABASE_URL pour db:push)
 npm install
+npm run db:push              # crée les tables (refuse s'il y a déjà des parties)
 npm run dev -- -H 0.0.0.0    # accessible depuis les téléphones du même Wi-Fi
 ```
 

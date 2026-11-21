@@ -94,15 +94,20 @@ export async function buildState(
   const db = supabaseAdmin();
   const quiz = getQuiz(game.quiz_id);
 
-  const [playersRes, answersRes, adjRes] = await Promise.all([
+  const [playersRes, answersRes, adjRes, nowRes] = await Promise.all([
     db.from("players").select("*").eq("game_id", game.id).order("created_at"),
     db
       .from("answers")
       .select("player_id, question_index, choice, is_correct, elapsed_ms, points")
       .eq("game_id", game.id),
     db.from("adjustments").select("player_id, points").eq("game_id", game.id),
+    // Heure de la BASE : c'est elle qui date l'ouverture des questions et les
+    // réponses, donc le chrono des écrans doit se caler dessus (et pas sur
+    // l'horloge du serveur Next, qui peut avoir plusieurs secondes d'écart).
+    db.rpc("server_now_ms"),
   ]);
   if (playersRes.error) throw playersRes.error;
+  if (nowRes.error) throw nowRes.error;
   if (answersRes.error) throw answersRes.error;
   if (adjRes.error) throw adjRes.error;
 
@@ -112,7 +117,12 @@ export async function buildState(
 
   // Classement cumulé = somme des points des réponses + ajustements manuels.
   const totals = new Map<string, number>(players.map((p) => [p.id, 0]));
-  for (const a of answers) totals.set(a.player_id, (totals.get(a.player_id) ?? 0) + a.points);
+  // Pendant une question, on n'y compte PAS ses points : sinon le total qui
+  // bouge trahirait (sur le téléphone ou la télé) si la réponse est juste.
+  for (const a of answers) {
+    if (game.phase === "question" && a.question_index === game.question_index) continue;
+    totals.set(a.player_id, (totals.get(a.player_id) ?? 0) + a.points);
+  }
   for (const a of adjustments) totals.set(a.player_id, (totals.get(a.player_id) ?? 0) + a.points);
 
   const sorted = [...players].sort(
@@ -191,7 +201,7 @@ export async function buildState(
       isTest: game.is_test,
       version: game.version,
     },
-    serverNow: Date.now(),
+    serverNow: Number(nowRes.data),
     players: players.map(toPublic),
     question: showQuestion && q ? { index: qi, text: q.text, choices: q.choices } : null,
     answeredCount: current.length,
