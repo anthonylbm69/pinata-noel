@@ -1,0 +1,7 @@
+{
+  "id": "programme-enfants",
+  "title": "La Pinata de Noël",
+  "rounds": ["quiz-tonton", "blindtest", "memoire", "justeprix", "quiestce"],
+  "final": { "buttons": 20, "bombs": 6, "winPoints": 3000, "secondPoints": 1500 },
+  "boxes": 7
+}

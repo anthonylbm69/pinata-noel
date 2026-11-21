@@ -1,0 +1,65 @@
+{
+  "id": "blindtest",
+  "type": "blindtest",
+  "title": "Blind test",
+  "rules": "La télé joue un extrait : trouve le bon titre le plus vite possible !",
+  "timeLimitMs": 20000,
+  "questions": [
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/01.mp3",
+      "start": 0,
+      "choices": ["Espresso", "Flowers", "APT.", "Houdini"],
+      "correct": 2
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/02.mp3",
+      "start": 0,
+      "choices": ["Ma meilleure ennemie", "Alors on danse", "Papaoutai", "Santé"],
+      "correct": 0
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/03.mp3",
+      "start": 0,
+      "choices": ["Levitating", "Blinding Lights", "Starboy", "As It Was"],
+      "correct": 1
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/04.mp3",
+      "start": 0,
+      "choices": ["Djadja", "Tchikita", "Bande organisée", "Bolide allemand"],
+      "correct": 2
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/05.mp3",
+      "start": 0,
+      "choices": ["Die With A Smile", "Birds of a Feather", "Lose Control", "Espresso"],
+      "correct": 3
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/06.mp3",
+      "start": 0,
+      "choices": ["Tourner dans le vide", "Dernière danse", "Je veux", "Formidable"],
+      "correct": 1
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/07.mp3",
+      "start": 0,
+      "choices": ["Shape of You", "Bad Guy", "Dance Monkey", "Believer"],
+      "correct": 0
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/08.mp3",
+      "start": 0,
+      "choices": ["Petit génie", "Ça va ça va", "Pookie", "Bon Bon"],
+      "correct": 2
+    }
+  ]
+}

@@ -45,7 +45,13 @@ Tél   /play/[code] ──┘   (clé service_role)    └── Realtime : UPDA
   du réseau. Le chrono est recalé sur `serverNow`.
 - **La télé pilote** : elle ferme la question quand le chrono est fini ou que tout le monde a répondu
   (`close`, idempotent côté SQL) et fait répondre les bots de test.
-- Machine à états (`games.phase`) : `lobby → question → results → (leaderboard) → question … → end`.
+- Machine à états (`games.phase`) : `lobby → intro → question → results → (leaderboard) → question … → intro
+  (épreuve suivante) … → final → boxes → end`.
+- **Programme** (`src/content/programme-enfants.json`) = liste d'épreuves + finale + nombre de box.
+  `getProgramme` (`src/lib/content.ts`) aplatit toutes les questions : `question_index` est un index **global**.
+  Types d'épreuve : `quiz`, `blindtest` (audio joué par la télé), `memoire` (objets affichés pendant l'intro),
+  `quiestce` (photo floue sur la télé), `justeprix` (saisie d'un prix, `answers.choice` = prix en euros,
+  points distribués à la fermeture par `close_price_question`).
 
 ### Base (`supabase/schema.sql`, ré-exécutable)
 | Table | Rôle |
@@ -54,10 +60,14 @@ Tél   /play/[code] ──┘   (clé service_role)    └── Realtime : UPDA
 | `game_secrets` | jeton animateur |
 | `players` | prénom (unique par partie, insensible à la casse), couleur, genre, **jeton d'appareil** (reconnexion), `is_bot` |
 | `answers` | heure posée par la base, points ; **unique (partie, joueur, question)** contre les doubles réponses |
-| `adjustments` | points donnés/retirés à la main (plan B) |
+| `adjustments` | points donnés/retirés à la main (plan B) et bonus de la finale (`reason = 'finale'`) |
+| `final_buttons` | 20 boutons, `is_bomb` tiré par la base, **jamais envoyé** tant que le bouton n'est pas appuyé |
+| `final_players` | ordre de passage (classement inversé), éliminations, place |
+| `boxes` | numéro de box choisi par joueur (unique), ordre = classement |
 
-Fonctions SQL : `open_question`, `close_question`, `submit_answer` (refuse si fermée, en retard > T+1,5 s, ou
-en double), `bump_game`. Classement = somme `answers.points` + `adjustments.points` (calculé dans
+Fonctions SQL : `open_question` (durée par épreuve), `open_intro`, `close_question`, `close_price_question`,
+`submit_answer` (refuse si fermée, en retard > T+1,5 s, ou en double), `start_final`, `press_button` (tour,
+bombe, élimination et bonus sous verrou), `server_now_ms`, `bump_game`. Classement = somme `answers.points` + `adjustments.points` (calculé dans
 `buildState`, jamais stocké).
 
 ### Fichiers clés
@@ -66,9 +76,14 @@ en double), `bump_game`. Classement = somme `answers.points` + `adjustments.poin
 - `src/app/api/games/[code]/host/route.ts` — actions animateur : start, close, show-leaderboard, next,
   restart-question, end, reset, add-bots, remove-bots, bot-answer, adjust, kick.
 - `src/hooks/useGameState.ts` — synchro Realtime + polling, chrono.
-- `src/app/host/[code]/HostScreen.tsx` + `HostPanel.tsx` (⚙ : bots, relancer, points à la main, lien animateur).
+- `src/app/host/[code]/HostScreen.tsx` (lobby, intro, questions, résultats, son du blind test) + `HostFinal.tsx`
+  (finale, box) + `HostPanel.tsx` (⚙ : bots, relancer, sauter une épreuve, aller à la finale/aux box, points à
+  la main, lien animateur).
+- Routes joueur : `answer`, `final` (appui sur un bouton), `box` (choix d'une box).
 - `src/app/play/[code]/PlayerGame.tsx` — écrans téléphone.
-- `src/content/*.json` — **contenu des épreuves, séparé du code** (le quiz sur tonton est validé).
+- `src/content/*.json` — **contenu des épreuves, séparé du code**. Guide : `CONTENU.md`.
+  `npm run check:content` liste les mp3 / photos manquants. Fichiers dans `public/audio/blindtest/` et
+  `public/photos/quiestce/`.
 
 ## Lancer en local
 
@@ -87,10 +102,12 @@ Vercel : importer le dépôt, ajouter les 3 variables d'environnement, déployer
 
 - [x] V1 (cible : dimanche 22/11) — sessions, lobby QR, quiz Kahoot complet, résultats, classement cumulé,
       reconnexion, bots, plan B (points à la main, relancer une question), lien animateur.
-- [ ] Autres épreuves : blind test (audio joué **uniquement par la télé**, bouton « Activer le son »),
-      mémoire 10 objets, juste prix (saisie numérique), qui est-ce (photo floutée qui se dévoile).
-- [ ] Finale 20 boutons / 6 bombes (table `final_buttons`, bombes illisibles par les clients).
-- [ ] Écran des box (table `boxes`, numéros 1–7 uniquement).
+- [x] Autres épreuves : blind test, mémoire 10 objets, juste prix, qui est-ce (testé avec bots le 21/11).
+- [ ] **Contenu à fournir par Anthony** : mp3 du blind test + vrais titres, photos du qui est-ce + prénoms,
+      vérifier les prix du juste prix (voir `CONTENU.md`).
+- [x] Finale 20 boutons / 6 bombes : dernier survivant +3000, dernier éliminé +1500, le dernier du classement
+      commence (règles validées par Anthony).
+- [x] Écran des box (numéros 1–7 uniquement, l'animateur peut choisir à la place d'un joueur).
 - [ ] Mode adultes (genre à l'inscription, 2 classements, épreuves adultes).
 - [ ] Admin : liste/suppression des parties de test, saut de phase.
 - [ ] Mise en ligne + répétition générale avec 5–6 vrais téléphones (Wi-Fi **et** 4G, tests de casse).

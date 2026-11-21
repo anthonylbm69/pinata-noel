@@ -105,9 +105,12 @@ export function useRemaining(state: GameState | null, serverNow: () => number) {
   // question suivante, le « 0 » de la question précédente (finie au chrono)
   // ressortait une fraction de seconde et la télé refermait la nouvelle question.
   const [tick, setTick] = useState<{ key: string; ms: number } | null>(null);
-  const openedAt = state?.game.phase === "question" ? state.game.openedAt : null;
+  // Chrono des questions, et aussi de l'écran mémoire (intro avec durée d'affichage).
+  const phase = state?.game.phase;
   const limit = state?.game.timeLimitMs ?? 0;
-  const key = openedAt ? `${openedAt}|${limit}` : null;
+  const timed = phase === "question" || (phase === "intro" && limit > 0);
+  const openedAt = timed ? (state?.game.openedAt ?? null) : null;
+  const key = openedAt ? `${phase}|${openedAt}|${limit}` : null;
   useEffect(() => {
     if (!openedAt || !key) return;
     const end = new Date(openedAt).getTime() + limit;

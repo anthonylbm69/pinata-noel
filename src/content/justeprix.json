@@ -1,0 +1,14 @@
+{
+  "id": "justeprix",
+  "type": "justeprix",
+  "title": "Le juste prix",
+  "rules": "Tape ton prix en euros. Le plus proche SANS DÉPASSER gagne ! En cas d'égalité, le plus rapide l'emporte.",
+  "timeLimitMs": 30000,
+  "questions": [
+    { "text": "Combien coûte un pot de Nutella de 1 kg ?", "emoji": "🍫", "price": 9 },
+    { "text": "Combien coûte une Nintendo Switch 2 (sans jeu) ?", "emoji": "🎮", "price": 470 },
+    { "text": "Combien coûte un menu Big Mac au McDo ?", "emoji": "🍔", "price": 11 },
+    { "text": "Combien coûte une place de cinéma plein tarif ?", "emoji": "🎬", "price": 14 },
+    { "text": "Combien coûte un abonnement Netflix (standard, par mois) ?", "emoji": "📺", "price": 14 }
+  ]
+}

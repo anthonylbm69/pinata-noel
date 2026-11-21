@@ -1,0 +1,39 @@
+{
+  "id": "quiestce",
+  "type": "quiestce",
+  "title": "Qui est-ce ?",
+  "rules": "Une photo floue apparaît et se dévoile petit à petit. Trouve qui c'est avant les autres !",
+  "timeLimitMs": 20000,
+  "questions": [
+    {
+      "text": "Qui est ce bébé ?",
+      "image": "/photos/quiestce/01.jpg",
+      "choices": ["Tonton", "Maman", "Papi", "Tata"],
+      "correct": 0
+    },
+    {
+      "text": "Qui est ce bébé ?",
+      "image": "/photos/quiestce/02.jpg",
+      "choices": ["Papa", "Mamie", "Tonton", "Tata"],
+      "correct": 1
+    },
+    {
+      "text": "Qui est sur cette photo ?",
+      "image": "/photos/quiestce/03.jpg",
+      "choices": ["Maman", "Papa", "Papi", "Tonton"],
+      "correct": 2
+    },
+    {
+      "text": "Qui est sur cette photo ?",
+      "image": "/photos/quiestce/04.jpg",
+      "choices": ["Tata", "Tonton", "Maman", "Mamie"],
+      "correct": 3
+    },
+    {
+      "text": "Qui est ce bébé ?",
+      "image": "/photos/quiestce/05.jpg",
+      "choices": ["Papi", "Tata", "Papa", "Maman"],
+      "correct": 1
+    }
+  ]
+}

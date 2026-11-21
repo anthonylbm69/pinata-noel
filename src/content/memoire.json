@@ -1,0 +1,57 @@
+{
+  "id": "memoire",
+  "type": "memoire",
+  "title": "Mémoire",
+  "rules": "Regarde bien les 10 objets à l'écran… ils vont disparaître ! Ensuite, réponds aux questions.",
+  "displayMs": 20000,
+  "timeLimitMs": 15000,
+  "objects": [
+    { "emoji": "🎸", "label": "Guitare" },
+    { "emoji": "🍕", "label": "Pizza" },
+    { "emoji": "🚲", "label": "Vélo" },
+    { "emoji": "🧸", "label": "Ours en peluche" },
+    { "emoji": "⚽", "label": "Ballon" },
+    { "emoji": "🎩", "label": "Chapeau" },
+    { "emoji": "🍩", "label": "Donut" },
+    { "emoji": "🔑", "label": "Clé" },
+    { "emoji": "🐧", "label": "Pingouin" },
+    { "emoji": "⏰", "label": "Réveil" }
+  ],
+  "questions": [
+    {
+      "text": "Lequel de ces objets était à l'écran ?",
+      "choices": ["🍔 Burger", "🚲 Vélo", "🎺 Trompette", "🐱 Chat"],
+      "correct": 1
+    },
+    {
+      "text": "Lequel N'ÉTAIT PAS à l'écran ?",
+      "choices": ["🍕 Pizza", "🔑 Clé", "🎮 Manette", "🐧 Pingouin"],
+      "correct": 2
+    },
+    {
+      "text": "Quel animal était à l'écran ?",
+      "choices": ["🐶 Chien", "🐧 Pingouin", "🦊 Renard", "🐻 Ours"],
+      "correct": 1
+    },
+    {
+      "text": "Combien d'objets y avait-il ?",
+      "choices": ["8", "9", "10", "12"],
+      "correct": 2
+    },
+    {
+      "text": "Quel objet sucré était à l'écran ?",
+      "choices": ["🍫 Chocolat", "🍭 Sucette", "🧁 Cupcake", "🍩 Donut"],
+      "correct": 3
+    },
+    {
+      "text": "Quel objet était tout en haut à gauche ?",
+      "choices": ["🎸 Guitare", "⚽ Ballon", "🎩 Chapeau", "🔑 Clé"],
+      "correct": 0
+    },
+    {
+      "text": "Lequel N'ÉTAIT PAS à l'écran ?",
+      "choices": ["🎩 Chapeau", "⏰ Réveil", "🧸 Ours en peluche", "🛹 Skate"],
+      "correct": 3
+    }
+  ]
+}

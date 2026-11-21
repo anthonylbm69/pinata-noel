@@ -7,6 +7,9 @@
 
 create extension if not exists pgcrypto;
 
+drop table if exists boxes cascade;
+drop table if exists final_players cascade;
+drop table if exists final_buttons cascade;
 drop table if exists adjustments cascade;
 drop table if exists answers cascade;
 drop table if exists players cascade;
@@ -22,14 +25,20 @@ create table games (
   id                    uuid primary key default gen_random_uuid(),
   code                  text not null unique,
   mode                  text not null default 'enfants' check (mode in ('enfants', 'adultes')),
-  quiz_id               text not null default 'quiz-tonton',
+  -- identifiant du programme d'épreuves (src/content/programme-*.json)
+  quiz_id               text not null default 'programme-enfants',
   phase                 text not null default 'lobby'
-                        check (phase in ('lobby', 'question', 'results', 'leaderboard', 'end')),
+                        check (phase in ('lobby', 'intro', 'question', 'results', 'leaderboard',
+                                         'final', 'boxes', 'end')),
   question_index        int  not null default -1,
   question_opened_at    timestamptz,
   question_time_limit_ms int not null default 20000,
   status                text not null default 'active' check (status in ('active', 'finished', 'archived')),
   is_test               boolean not null default false,
+  -- Finale : joueur dont c'est le tour (null = finale pas commencée ou finie)
+  final_turn            uuid,
+  -- Nombre de box à choisir à la fin
+  box_count             int not null default 7,
   version               bigint not null default 0,
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now()
@@ -78,6 +87,37 @@ create table adjustments (
   created_at timestamptz not null default now()
 );
 
+-- Finale « bouton de la mort » : 20 boutons dont 6 bombes, tirées par la base.
+-- is_bomb n'est JAMAIS envoyé aux clients tant que le bouton n'est pas appuyé.
+create table final_buttons (
+  game_id    uuid not null references games(id) on delete cascade,
+  idx        int  not null,
+  is_bomb    boolean not null,
+  pressed_by uuid references players(id) on delete set null,
+  pressed_at timestamptz,
+  primary key (game_id, idx)
+);
+
+-- Ordre de passage de la finale et éliminations.
+create table final_players (
+  game_id    uuid not null references games(id) on delete cascade,
+  player_id  uuid not null references players(id) on delete cascade,
+  turn_order int  not null,
+  out_at     timestamptz,
+  place      int,
+  primary key (game_id, player_id)
+);
+
+-- Box choisies à la fin : seulement des numéros, jamais leur contenu.
+create table boxes (
+  game_id    uuid not null references games(id) on delete cascade,
+  box_number int  not null,
+  player_id  uuid not null references players(id) on delete cascade,
+  picked_at  timestamptz not null default now(),
+  primary key (game_id, box_number),
+  unique (game_id, player_id)
+);
+
 -- ---------------------------------------------------------------------
 -- Sécurité (RLS) : tout est fermé, sauf la lecture de "games".
 -- Le serveur Next.js utilise la clé service_role, qui contourne la RLS.
@@ -87,6 +127,9 @@ alter table game_secrets enable row level security;
 alter table players      enable row level security;
 alter table answers      enable row level security;
 alter table adjustments  enable row level security;
+alter table final_buttons enable row level security;
+alter table final_players enable row level security;
+alter table boxes        enable row level security;
 
 create policy "games lisibles par tous" on games for select using (true);
 
@@ -114,10 +157,26 @@ returns void language sql as $$
 $$;
 
 -- Ouvre une question : l'heure d'ouverture vient de l'horloge de la base.
-create or replace function open_question(p_game uuid, p_index int)
+-- La durée dépend de l'épreuve (p_limit_ms).
+drop function if exists open_question(uuid, int);
+create or replace function open_question(p_game uuid, p_index int, p_limit_ms int)
 returns void language sql as $$
   update games
      set phase = 'question',
+         question_index = p_index,
+         question_opened_at = now(),
+         question_time_limit_ms = p_limit_ms,
+         version = version + 1,
+         updated_at = now()
+   where id = p_game;
+$$;
+
+-- Écran de présentation d'une épreuve (p_index = sa première question).
+-- question_opened_at sert de départ au chrono d'affichage (épreuve mémoire).
+create or replace function open_intro(p_game uuid, p_index int)
+returns void language sql as $$
+  update games
+     set phase = 'intro',
          question_index = p_index,
          question_opened_at = now(),
          version = version + 1,
@@ -179,6 +238,131 @@ begin
 
   perform bump_game(p_game);
   return query select true, 'ok', v_elapsed, v_points;
+end $$;
+
+-- Juste prix : ferme la question ET distribue les points d'un coup.
+-- Le plus proche SANS DÉPASSER gagne ; à égalité, le plus rapide.
+-- Barème par rang (parmi ceux qui n'ont pas dépassé) : p_scale[1], p_scale[2]…
+create or replace function close_price_question(p_game uuid, p_index int, p_price int, p_scale int[])
+returns boolean language plpgsql as $$
+begin
+  update games
+     set phase = 'results', updated_at = now()
+   where id = p_game and phase = 'question' and question_index = p_index;
+  if not found then return false; end if;
+
+  with ranked as (
+    select id,
+           row_number() over (order by (p_price - choice) asc, elapsed_ms asc) as rk
+      from answers
+     where game_id = p_game and question_index = p_index and choice <= p_price
+  )
+  update answers a
+     set points = coalesce(p_scale[r.rk], p_scale[array_length(p_scale, 1)]),
+         is_correct = (r.rk = 1)
+    from ranked r
+   where a.id = r.id;
+
+  perform bump_game(p_game);
+  return true;
+end $$;
+
+-- Finale : tire les 6 bombes parmi 20 boutons et fixe l'ordre de passage.
+create or replace function start_final(p_game uuid, p_order uuid[], p_buttons int, p_bombs int)
+returns void language plpgsql as $$
+begin
+  delete from final_buttons where game_id = p_game;
+  delete from final_players where game_id = p_game;
+
+  insert into final_buttons (game_id, idx, is_bomb)
+  select p_game, i, false from generate_series(0, p_buttons - 1) as i;
+  update final_buttons set is_bomb = true
+   where game_id = p_game
+     and idx in (select idx from final_buttons where game_id = p_game order by random() limit p_bombs);
+
+  insert into final_players (game_id, player_id, turn_order)
+  select p_game, pid, ord from unnest(p_order) with ordinality as t(pid, ord);
+
+  update games
+     set phase = 'final', final_turn = p_order[1], version = version + 1, updated_at = now()
+   where id = p_game;
+end $$;
+
+-- Finale : un joueur appuie sur un bouton. Tout est vérifié et fait ici,
+-- sous verrou, pour éviter les doubles appuis.
+--   bombe → le joueur est éliminé ; s'il ne reste qu'un joueur, il gagne
+--   +p_win et le dernier éliminé +p_second.
+create or replace function press_button(
+  p_game uuid, p_player uuid, p_idx int, p_win int, p_second int
+)
+returns table (ok boolean, reason text, bomb boolean, finished boolean)
+language plpgsql as $$
+declare
+  g        games%rowtype;
+  b        final_buttons%rowtype;
+  v_alive  int;
+  v_order  int;
+  v_next   uuid;
+  v_left   int;
+begin
+  select * into g from games where id = p_game for update;
+  if g.phase <> 'final' or g.final_turn is null then
+    return query select false, 'not_final', false, false; return;
+  end if;
+  if g.final_turn <> p_player then
+    return query select false, 'not_your_turn', false, false; return;
+  end if;
+
+  select * into b from final_buttons where game_id = p_game and idx = p_idx;
+  if b.game_id is null then
+    return query select false, 'bad_button', false, false; return;
+  end if;
+  if b.pressed_at is not null then
+    return query select false, 'already_pressed', false, false; return;
+  end if;
+
+  update final_buttons set pressed_by = p_player, pressed_at = now()
+   where game_id = p_game and idx = p_idx;
+
+  -- Joueurs encore en jeu (un joueur exclu de la partie disparaît d'ici).
+  select count(*) into v_alive from final_players fp
+    join players p on p.id = fp.player_id
+   where fp.game_id = p_game and fp.out_at is null;
+
+  if b.is_bomb then
+    update final_players set out_at = now(), place = v_alive
+     where game_id = p_game and player_id = p_player;
+    v_alive := v_alive - 1;
+  end if;
+
+  select count(*) into v_left from final_buttons where game_id = p_game and pressed_at is null;
+
+  if v_alive <= 1 or v_left = 0 then
+    -- Fin : le(s) survivant(s) gagnent, le dernier éliminé est 2e.
+    update final_players set place = 1
+     where game_id = p_game and out_at is null;
+    insert into adjustments (game_id, player_id, points, reason)
+    select p_game, fp.player_id, p_win, 'finale' from final_players fp
+      join players p on p.id = fp.player_id
+     where fp.game_id = p_game and fp.out_at is null;
+    insert into adjustments (game_id, player_id, points, reason)
+    select p_game, fp.player_id, p_second, 'finale' from final_players fp
+     where fp.game_id = p_game and fp.out_at is not null
+     order by fp.out_at desc limit 1;
+    update games set final_turn = null, version = version + 1, updated_at = now() where id = p_game;
+    return query select true, 'ok', b.is_bomb, true; return;
+  end if;
+
+  -- Tour suivant : prochain joueur encore en jeu dans l'ordre de passage.
+  select turn_order into v_order from final_players where game_id = p_game and player_id = p_player;
+  select fp.player_id into v_next from final_players fp
+    join players p on p.id = fp.player_id
+   where fp.game_id = p_game and fp.out_at is null
+   order by (fp.turn_order <= v_order), fp.turn_order
+   limit 1;
+
+  update games set final_turn = v_next, version = version + 1, updated_at = now() where id = p_game;
+  return query select true, 'ok', b.is_bomb, false;
 end $$;
 
 -- Ces fonctions ne sont appelées que par le serveur (clé service_role) :

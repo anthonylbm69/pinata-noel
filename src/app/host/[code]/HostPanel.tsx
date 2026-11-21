@@ -83,6 +83,21 @@ export default function HostPanel({
                 Fermer la question
               </Small>
             )}
+            {["intro", "question", "results", "leaderboard"].includes(phase) && (
+              <Small onClick={() => confirmThen("skip", () => void act("skip-round"))}>
+                {pending === "skip" ? "Confirmer ?" : "Sauter cette épreuve"}
+              </Small>
+            )}
+            {state.game.hasFinal && phase !== "final" && phase !== "lobby" && phase !== "end" && (
+              <Small onClick={() => confirmThen("final", () => void act("goto-final"))}>
+                {pending === "final" ? "Confirmer ?" : phase === "boxes" ? "Rejouer la finale" : "Aller à la finale"}
+              </Small>
+            )}
+            {phase !== "boxes" && phase !== "lobby" && phase !== "end" && (
+              <Small onClick={() => confirmThen("boxes", () => void act("goto-boxes"))}>
+                {pending === "boxes" ? "Confirmer ?" : "Aller aux box"}
+              </Small>
+            )}
             {phase !== "end" && phase !== "lobby" && (
               <Small onClick={() => confirmThen("end", () => void act("end"))}>
                 {pending === "end" ? "Confirmer ?" : "Terminer la partie"}

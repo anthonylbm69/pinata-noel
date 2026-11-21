@@ -1,56 +1,108 @@
 {
   "id": "quiz-tonton",
+  "type": "quiz",
   "title": "Quiz sur tonton",
+  "rules": "Qui connaît le mieux tonton ? Réponds vite : plus tu es rapide, plus tu gagnes de points !",
   "timeLimitMs": 20000,
   "questions": [
     {
       "text": "Quel sport tonton pratique en club ?",
-      "choices": ["Badminton", "Tennis", "Ping-pong", "Foot"],
+      "choices": [
+        "Badminton",
+        "Tennis",
+        "Ping-pong",
+        "Foot"
+      ],
       "correct": 0
     },
     {
       "text": "Dans quel pays tonton a fait son premier voyage ?",
-      "choices": ["Japon", "Corée du Sud", "Canada", "Thaïlande"],
+      "choices": [
+        "Japon",
+        "Corée du Sud",
+        "Canada",
+        "Thaïlande"
+      ],
       "correct": 1
     },
     {
       "text": "Quel instrument joue tonton ?",
-      "choices": ["Piano", "Batterie", "Guitare", "Ukulélé"],
+      "choices": [
+        "Piano",
+        "Batterie",
+        "Guitare",
+        "Ukulélé"
+      ],
       "correct": 2
     },
     {
       "text": "Quel est le plat signature de tonton ?",
-      "choices": ["Pizza", "Curry japonais", "Tacos sauce fromagère", "Moo cré"],
+      "choices": [
+        "Pizza",
+        "Curry japonais",
+        "Tacos sauce fromagère",
+        "Moo cré"
+      ],
       "correct": 3
     },
     {
       "text": "Quelles baskets tonton porte tout le temps ?",
-      "choices": ["Air Force 1", "Stan Smith", "Jordan 1", "Vans"],
+      "choices": [
+        "Air Force 1",
+        "Stan Smith",
+        "Jordan 1",
+        "Vans"
+      ],
       "correct": 0
     },
     {
       "text": "Quel est le métier de tonton ?",
-      "choices": ["Youtubeur", "Développeur", "Joueur pro", "Cuisinier"],
+      "choices": [
+        "Youtubeur",
+        "Développeur",
+        "Joueur pro",
+        "Cuisinier"
+      ],
       "correct": 1
     },
     {
       "text": "Où tonton a fait son premier job d'été ?",
-      "choices": ["Carrefour", "McDo", "Decathlon", "Jamais bossé l'été"],
+      "choices": [
+        "Carrefour",
+        "McDo",
+        "Decathlon",
+        "Jamais bossé l'été"
+      ],
       "correct": 3
     },
     {
       "text": "Combien de neveux et nièces a tonton ?",
-      "choices": ["8", "10", "12", "15"],
+      "choices": [
+        "8",
+        "10",
+        "12",
+        "15"
+      ],
       "correct": 1
     },
     {
       "text": "À quel jeu de cartes tonton joue en ligne ?",
-      "choices": ["Uno", "Belote", "Poker", "Pokémon"],
+      "choices": [
+        "Uno",
+        "Belote",
+        "Poker",
+        "Pokémon"
+      ],
       "correct": 2
     },
     {
       "text": "Quel Pokémon tonton choisirait comme starter ?",
-      "choices": ["Vipélierre", "Moustillon", "Pikachu", "Gruikui"],
+      "choices": [
+        "Vipélierre",
+        "Moustillon",
+        "Pikachu",
+        "Gruikui"
+      ],
       "correct": 3
     }
   ]

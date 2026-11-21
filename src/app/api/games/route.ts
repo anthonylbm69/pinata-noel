@@ -1,6 +1,6 @@
 // POST /api/games — crée une nouvelle partie (session) et renvoie le jeton animateur.
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { DEFAULT_QUIZ_ID, getQuiz } from "@/lib/content";
+import { DEFAULT_PROGRAMME_ID, getProgramme } from "@/lib/content";
 import { handle, ok, readJson, HttpError } from "@/lib/http";
 
 function randomCode() {
@@ -10,7 +10,7 @@ function randomCode() {
 export const POST = handle(async (req: Request) => {
   const body = await readJson<{ isTest?: boolean; mode?: string }>(req);
   const mode = body.mode === "adultes" ? "adultes" : "enfants";
-  const quiz = getQuiz(DEFAULT_QUIZ_ID);
+  const prog = getProgramme(DEFAULT_PROGRAMME_ID);
   const db = supabaseAdmin();
 
   // Code à 4 chiffres, on réessaie en cas de collision.
@@ -21,8 +21,9 @@ export const POST = handle(async (req: Request) => {
       .insert({
         code,
         mode,
-        quiz_id: quiz.id,
-        question_time_limit_ms: quiz.timeLimitMs,
+        quiz_id: prog.id,
+        question_time_limit_ms: prog.flat[0].timeLimitMs,
+        box_count: prog.boxes,
         is_test: !!body.isTest,
       })
       .select("id, code")

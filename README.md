@@ -36,4 +36,6 @@ npm run dev -- -H 0.0.0.0    # accessible depuis les téléphones du même Wi-Fi
 ```
 
 ## Contenu
-Les questions sont dans `src/content/` (JSON). Voir `CLAUDE.md` pour l'architecture et la feuille de route.
+Les épreuves sont dans `src/content/` (JSON) : voir **[CONTENU.md](CONTENU.md)** pour ajouter les mp3 du blind test,
+les photos du qui est-ce et vérifier les prix. `npm run check:content` liste ce qui manque.
+Voir `CLAUDE.md` pour l'architecture et la feuille de route.
