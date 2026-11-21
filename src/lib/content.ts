@@ -1,6 +1,7 @@
 import type { FlatQuestion, PriceQuestion, Programme, Round } from "./types";
 import quizTonton from "@/content/quiz-tonton.json";
 import blindtest from "@/content/blindtest.json";
+import blindtestAdultes from "@/content/blindtest-adultes.json";
 import memoire from "@/content/memoire.json";
 import justeprix from "@/content/justeprix.json";
 import quiestce from "@/content/quiestce.json";
@@ -10,7 +11,7 @@ import programmeEnfants from "@/content/programme-enfants.json";
 // Pour ajouter une épreuve : créer le JSON, l'enregistrer ici, puis l'ajouter
 // à la liste "rounds" d'un programme.
 const ROUNDS: Record<string, Round> = Object.fromEntries(
-  ([quizTonton, blindtest, memoire, justeprix, quiestce] as Round[]).map((r) => [r.id, r]),
+  ([quizTonton, blindtest, blindtestAdultes, memoire, justeprix, quiestce] as Round[]).map((r) => [r.id, r]),
 );
 
 const PROGRAMMES: Record<string, Programme> = {

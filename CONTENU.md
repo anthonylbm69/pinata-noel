@@ -14,14 +14,14 @@ Il liste les fichiers manquants et les erreurs (mauvaise réponse hors des choix
 ## 🧠 Quiz sur tonton — `quiz-tonton.json`
 Déjà rempli et validé.
 
-## 🎵 Blind test — `blindtest.json`
-1. Choisis tes morceaux et mets les extraits en **mp3** dans `public/audio/blindtest/`, nommés
-   `01.mp3`, `02.mp3`… (jamais le titre dans le nom : un petit malin pourrait le lire).
-2. Pour chaque question, mets les 4 titres dans `choices` et la position du bon dans `correct`.
-3. `start` = seconde de départ de l'extrait (ex. `45` pour démarrer au refrain).
-
-Les titres déjà écrits sont des **exemples** : remplace-les par ta sélection.
+## 🎵 Blind test — `blindtest.json` (enfants) et `blindtest-adultes.json`
+Rempli : 10 morceaux enfants dans `public/audio/blindtest/enfant/`, 7 adultes dans `public/audio/blindtest/adulte/`
+(les noms de fichiers d'origine sont gardés, l'URL est encodée par la télé).
+- `choices` = les 4 titres, `correct` = position du bon.
+- `start` = seconde de départ de l'extrait (calée sur le moment où le morceau démarre vraiment, après
+  l'intro du clip) : à ajuster à l'oreille si besoin.
 Le son est joué **par la télé uniquement**. Si la télé affiche « 🔊 Activer le son », clique dessus.
+Le blind test adultes sera branché avec le mode adultes.
 
 ## 👀 Mémoire — `memoire.json`
 Prêt à jouer : 10 objets (emoji + nom) affichés 20 s, puis 7 questions. Tu peux changer les objets

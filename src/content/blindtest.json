@@ -7,59 +7,123 @@
   "questions": [
     {
       "text": "Quel est ce titre ?",
-      "audio": "/audio/blindtest/01.mp3",
-      "start": 0,
-      "choices": ["Espresso", "Flowers", "APT.", "Houdini"],
-      "correct": 2
-    },
-    {
-      "text": "Quel est ce titre ?",
-      "audio": "/audio/blindtest/02.mp3",
-      "start": 0,
-      "choices": ["Ma meilleure ennemie", "Alors on danse", "Papaoutai", "Santé"],
-      "correct": 0
-    },
-    {
-      "text": "Quel est ce titre ?",
-      "audio": "/audio/blindtest/03.mp3",
-      "start": 0,
-      "choices": ["Levitating", "Blinding Lights", "Starboy", "As It Was"],
+      "audio": "/audio/blindtest/enfant/Djaksparo Feat. Gambi - Scuba (Clip officiel).mp3",
+      "start": 29,
+      "choices": [
+        "Popopop",
+        "Scuba",
+        "Dans l'espace",
+        "Bambina"
+      ],
       "correct": 1
     },
     {
       "text": "Quel est ce titre ?",
-      "audio": "/audio/blindtest/04.mp3",
-      "start": 0,
-      "choices": ["Djadja", "Tchikita", "Bande organisée", "Bolide allemand"],
-      "correct": 2
-    },
-    {
-      "text": "Quel est ce titre ?",
-      "audio": "/audio/blindtest/05.mp3",
-      "start": 0,
-      "choices": ["Die With A Smile", "Birds of a Feather", "Lose Control", "Espresso"],
+      "audio": "/audio/blindtest/enfant/Ed Sheeran - Perfect (Official Music Video).mp3",
+      "start": 22,
+      "choices": [
+        "Shape of You",
+        "Thinking Out Loud",
+        "Photograph",
+        "Perfect"
+      ],
       "correct": 3
     },
     {
       "text": "Quel est ce titre ?",
-      "audio": "/audio/blindtest/06.mp3",
-      "start": 0,
-      "choices": ["Tourner dans le vide", "Dernière danse", "Je veux", "Formidable"],
-      "correct": 1
-    },
-    {
-      "text": "Quel est ce titre ?",
-      "audio": "/audio/blindtest/07.mp3",
-      "start": 0,
-      "choices": ["Shape of You", "Bad Guy", "Dance Monkey", "Believer"],
+      "audio": "/audio/blindtest/enfant/INOXTAG - MILI MILI (clip officiel).mp3",
+      "start": 14,
+      "choices": [
+        "Mili Mili",
+        "Bim Bam Toi",
+        "Tchikita",
+        "Pookie"
+      ],
       "correct": 0
     },
     {
       "text": "Quel est ce titre ?",
-      "audio": "/audio/blindtest/08.mp3",
-      "start": 0,
-      "choices": ["Petit génie", "Ça va ça va", "Pookie", "Bon Bon"],
+      "audio": "/audio/blindtest/enfant/Maéva Méline - Où est la vraie vie_ (De Raiponce_Official Video).mp3",
+      "start": 26,
+      "choices": [
+        "Libérée, délivrée",
+        "Où est la vraie vie ?",
+        "Partir là-bas",
+        "L'air du vent"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/enfant/MULAN - Comme un homme.mp3",
+      "start": 26,
+      "choices": [
+        "Je voudrais déjà être roi",
+        "Hakuna Matata",
+        "Comme un homme",
+        "Bien plus fort"
+      ],
       "correct": 2
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/enfant/Naruto Shippuden Opening 3 _ Blue Bird.mp3",
+      "start": 13,
+      "choices": [
+        "Blue Bird (Naruto)",
+        "Silhouette (Naruto)",
+        "Gurenge (Demon Slayer)",
+        "Unravel (Tokyo Ghoul)"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/enfant/Opening One Piece 1 We Are VF.mp3",
+      "start": 5,
+      "choices": [
+        "Pégase Fantasy (Saint Seiya)",
+        "We Are (One Piece)",
+        "Cha-La Head-Cha-La (Dragon Ball Z)",
+        "Again (Fullmetal Alchemist)"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/enfant/ROSÉ & Bruno Mars - APT. (Official Music Video).mp3",
+      "start": 25,
+      "choices": [
+        "Die With A Smile",
+        "Espresso",
+        "Golden",
+        "APT."
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/enfant/SQUEEZIE - TOP 1.mp3",
+      "start": 10,
+      "choices": [
+        "Djadja",
+        "Bande organisée",
+        "Top 1",
+        "Petit génie"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/enfant/Tiakola - Meuda (Clip officiel).mp3",
+      "start": 33,
+      "choices": [
+        "Gasolina",
+        "Bolide allemand",
+        "Tchikita",
+        "Meuda"
+      ],
+      "correct": 3
     }
   ]
 }

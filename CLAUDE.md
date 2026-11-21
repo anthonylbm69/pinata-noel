@@ -108,7 +108,8 @@ Vercel : importer le dépôt, ajouter les 3 variables d'environnement, déployer
 - [x] V1 (cible : dimanche 22/11) — sessions, lobby QR, quiz Kahoot complet, résultats, classement cumulé,
       reconnexion, bots, plan B (points à la main, relancer une question), lien animateur.
 - [x] Autres épreuves : blind test, mémoire 10 objets, juste prix, qui est-ce (testé avec bots le 21/11).
-- [ ] **Contenu à fournir par Anthony** : mp3 du blind test + vrais titres, photos du qui est-ce + prénoms,
+- [x] Blind test rempli (10 enfants, 7 adultes dans `blindtest-adultes.json`, pas encore branché).
+- [ ] **Contenu à fournir par Anthony** : photos du qui est-ce + prénoms,
       vérifier les prix du juste prix (voir `CONTENU.md`).
 - [x] Finale 20 boutons / 6 bombes : dernier survivant +3000, dernier éliminé +1500, le dernier du classement
       commence (règles validées par Anthony).

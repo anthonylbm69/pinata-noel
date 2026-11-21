@@ -1,0 +1,93 @@
+{
+  "id": "blindtest-adultes",
+  "type": "blindtest",
+  "title": "Blind test",
+  "rules": "La télé joue un extrait : trouve le bon titre le plus vite possible !",
+  "timeLimitMs": 20000,
+  "questions": [
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/adulte/Britney Spears - Toxic Official HD Video [youaretube.com].mp3",
+      "start": 15,
+      "choices": [
+        "Toxic",
+        "Crazy in Love",
+        "Umbrella",
+        "Oops!... I Did It Again"
+      ],
+      "correct": 0
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/adulte/Bruno Mars - The Lazy Song Official Music Video [youaretube.com].mp3",
+      "start": 8,
+      "choices": [
+        "Just the Way You Are",
+        "Uptown Funk",
+        "The Lazy Song",
+        "Grenade"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/adulte/Daft Punk - One More Time Official Audio [youaretube.com].mp3",
+      "start": 30,
+      "choices": [
+        "Around the World",
+        "Get Lucky",
+        "Harder, Better, Faster, Stronger",
+        "One More Time"
+      ],
+      "correct": 3
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/adulte/Diams - La Boulette Clip officiel [youaretube.com].mp3",
+      "start": 28,
+      "choices": [
+        "DJ",
+        "La Boulette",
+        "Ma souffrance",
+        "Confessions nocturnes"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/adulte/Michael Jackson - Billie Jean Official Video [youaretube.com].mp3",
+      "start": 1,
+      "choices": [
+        "Beat It",
+        "Thriller",
+        "Billie Jean",
+        "Smooth Criminal"
+      ],
+      "correct": 2
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/adulte/Numb Official Music Video 4K UPGRADE – Linkin Park [youaretube.com].mp3",
+      "start": 5,
+      "choices": [
+        "In the End",
+        "Numb",
+        "Crawling",
+        "Faint"
+      ],
+      "correct": 1
+    },
+    {
+      "text": "Quel est ce titre ?",
+      "audio": "/audio/blindtest/adulte/Sexion dassaut - Désolé [youaretube.com].mp3",
+      "start": 10,
+      "choices": [
+        "Désolé",
+        "Wati By Night",
+        "Ma direction",
+        "Avant qu'elle parte"
+      ],
+      "correct": 0
+    }
+  ]
+}

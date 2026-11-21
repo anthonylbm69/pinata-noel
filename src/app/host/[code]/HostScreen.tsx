@@ -239,7 +239,8 @@ function BlindTestAudio({ state }: { state: GameState }) {
   const [blocked, setBlocked] = useState(false);
   const [missing, setMissing] = useState<string | null>(null);
   const q = state.question;
-  const src = q?.audio ?? null;
+  // les noms de fichiers peuvent contenir espaces, accents, crochets… : on encode l'URL
+  const src = q?.audio ? encodeURI(q.audio) : null;
   const playing = !!src && (state.game.phase === "question" || state.game.phase === "results");
   const key = playing ? `${q!.index}-${state.game.openedAt}` : null;
 
@@ -271,7 +272,7 @@ function BlindTestAudio({ state }: { state: GameState }) {
 
   return (
     <>
-      <audio ref={ref} preload="auto" onError={() => src && setMissing(src)} />
+      <audio ref={ref} preload="auto" onError={() => q?.audio && setMissing(q.audio)} />
       {playing && blocked && (
         <button
           onClick={() => ref.current?.play().then(() => setBlocked(false), () => setBlocked(true))}
